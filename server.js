@@ -1892,7 +1892,7 @@ async function persistImportedVideos(importedAll) {
         video.updatedAt = nowIso()
         changed = true
       }
-      continue
+      return
     }
 
     const decision = getModerationDecision(video)
@@ -2977,6 +2977,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
