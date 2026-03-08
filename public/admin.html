@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NovaPlay Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+<header class="admin-header">
+  <div class="logo"><img src="/assets/novaplay-logo.svg" alt="NovaPlay" style="height:34px;width:auto"></div>
+  <div class="admin-header-right">
+    <span id="sessionInfo">Not logged in</span>
+    <button id="logoutBtn" class="admin-btn ghost">Logout</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <section class="admin-login-card" id="loginCard">
+    <h2>Admin Login</h2>
+    <p>Enter your private password to manage videos.</p>
+    <input id="passwordInput" type="password" placeholder="Admin password">
+    <button id="loginBtn" class="admin-btn">Login</button>
+  </section>
+
+  <section class="admin-dashboard hidden" id="dashboard">
+    <div class="admin-grid stats-grid">
+      <div class="stat-card"><span>Total</span><strong id="statTotal">0</strong></div>
+      <div class="stat-card"><span>Pending (To Approve)</span><strong id="statPending">0</strong></div>
+      <div class="stat-card"><span>Approved</span><strong id="statApproved">0</strong></div>
+      <div class="stat-card"><span>Rejected</span><strong id="statRejected">0</strong></div>
+      <div class="stat-card"><span>Homepage Live</span><strong id="statHomepage">0</strong></div>
+    </div>
+
+    <div class="panel">
+      <h3>Import Videos</h3>
+      <div id="providerStatus" class="provider-status"></div>
+      <div class="import-row">
+        <select id="importProvider">
+          <option value="youtube">YouTube</option>
+          <option value="vimeo">Vimeo</option>
+          <option value="dailymotion">Dailymotion</option>
+          <option value="pexels">Pexels</option>
+          <option value="pixabay">Pixabay</option>
+          <option value="peertube">PeerTube</option>
+          <option value="archive">Archive.org</option>
+          <option value="omdb">OMDb</option>
+          <option value="watchmode">Watchmode</option>
+          <option value="trakt">Trakt TV</option>
+          <option value="all">All Enabled APIs</option>
+        </select>
+        <input id="importQuery" placeholder="Search query (example: latest tech news)">
+        <input id="importCount" type="number" min="1" max="100" value="10">
+        <button id="importBtn" class="admin-btn">Import + Auto Moderation</button>
+      </div>
+      <p class="muted">AI moderation: only adult-risk videos go to manual approval queue. All other videos (including movies) auto-publish to homepage.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Find Video</h3>
+      <div class="import-row">
+        <input id="adminSearch" placeholder="Search by title, id, source, video id">
+        <select id="categoryFilter">
+          <option value="all">All Categories</option>
+        </select>
+        <select id="languageFilter">
+          <option value="all">All Languages</option>
+        </select>
+        <select id="sourceFilter">
+          <option value="all">All Sources</option>
+        </select>
+        <button id="searchBtn" class="admin-btn ghost">Search</button>
+        <button id="clearSearchBtn" class="admin-btn ghost">Clear</button>
+      </div>
+    </div>
+
+    <div class="admin-grid preview-layout">
+      <div class="panel admin-preview-panel admin-resizable" id="previewPanel">
+        <h3>Quick Preview Player</h3>
+        <div id="previewMeta" class="muted">Select any video from list to preview and moderate.</div>
+        <div id="previewPlayer" class="admin-preview-player">
+          <div class="muted">No video selected</div>
+        </div>
+        <div class="video-row-actions">
+          <button id="previewApproveBtn" class="admin-btn ok" disabled>Approve</button>
+          <button id="previewToggleBtn" class="admin-btn ghost" disabled>Public/Private</button>
+          <button id="previewRejectBtn" class="admin-btn danger" disabled>Reject</button>
+        </div>
+      </div>
+
+      <div class="panel admin-resizable" id="moderationPanel">
+        <h3>Moderation Queue</h3>
+        <div class="moderation-tabs">
+          <button id="tabHomepage" class="admin-btn ghost active">Homepage Live</button>
+          <button id="tabApproved" class="admin-btn ghost">Approved</button>
+          <button id="tabPending" class="admin-btn ghost">Pending</button>
+          <button id="tabRejected" class="admin-btn ghost">Rejected</button>
+        </div>
+        <div id="moderationList" class="video-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="adminMessage" class="admin-message"></div>
+</main>
+
+<script>
+const loginCard = document.getElementById("loginCard")
+const dashboard = document.getElementById("dashboard")
+const passwordInput = document.getElementById("passwordInput")
+const loginBtn = document.getElementById("loginBtn")
+const logoutBtn = document.getElementById("logoutBtn")
+const sessionInfo = document.getElementById("sessionInfo")
+const adminMessage = document.getElementById("adminMessage")
+
+const moderationList = document.getElementById("moderationList")
+const tabHomepage = document.getElementById("tabHomepage")
+const tabApproved = document.getElementById("tabApproved")
+const tabPending = document.getElementById("tabPending")
+const tabRejected = document.getElementById("tabRejected")
+
+const statTotal = document.getElementById("statTotal")
+const statPending = document.getElementById("statPending")
+const statApproved = document.getElementById("statApproved")
+const statRejected = document.getElementById("statRejected")
+const statHomepage = document.getElementById("statHomepage")
+
+const importProvider = document.getElementById("importProvider")
+const importQuery = document.getElementById("importQuery")
+const importCount = document.getElementById("importCount")
+const importBtn = document.getElementById("importBtn")
+const providerStatus = document.getElementById("providerStatus")
+const adminSearch = document.getElementById("adminSearch")
+const searchBtn = document.getElementById("searchBtn")
+const clearSearchBtn = document.getElementById("clearSearchBtn")
+const categoryFilter = document.getElementById("categoryFilter")
+const languageFilter = document.getElementById("languageFilter")
+const sourceFilter = document.getElementById("sourceFilter")
+
+const previewMeta = document.getElementById("previewMeta")
+const previewPlayer = document.getElementById("previewPlayer")
+const previewApproveBtn = document.getElementById("previewApproveBtn")
+const previewToggleBtn = document.getElementById("previewToggleBtn")
+const previewRejectBtn = document.getElementById("previewRejectBtn")
+
+let currentSearch = ""
+let currentCategory = "all"
+let currentLanguage = "all"
+let currentSource = "all"
+let currentTab = "homepage"
+
+let adminVideosCache = []
+let selectedPreviewId = 0
+let moderationBuckets = { homepage: [], approved: [], pending: [], rejected: [] }
+
+const TOKEN_KEY = "novaplay_admin_token"
+
+function getToken() { return localStorage.getItem(TOKEN_KEY) || "" }
+function setToken(token) { localStorage.setItem(TOKEN_KEY, token) }
+function clearToken() { localStorage.removeItem(TOKEN_KEY) }
+
+function setMessage(message, isError = false) {
+  adminMessage.textContent = message
+  adminMessage.style.color = isError ? "#ff8a80" : "#9be29b"
+}
+
+async function adminFetch(url, options = {}) {
+  const token = getToken()
+  const headers = Object.assign({}, options.headers || {})
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (options.body) headers["Content-Type"] = "application/json"
+
+  const response = await fetch(url, Object.assign({}, options, { headers }))
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload.error || "Request failed")
+  return payload
+}
+
+function createActionButton(label, className, onClick) {
+  const btn = document.createElement("button")
+  btn.className = `admin-btn ${className}`
+  btn.textContent = label
+  btn.addEventListener("click", event => {
+    event.stopPropagation()
+    onClick()
+  })
+  return btn
+}
+
+function getThumb(video) {
+  if (video.thumbnailUrl) return video.thumbnailUrl
+  if (video.videoId) return `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`
+  return ""
+}
+
+function isYouTubeLikeId(value) {
+  return /^[A-Za-z0-9_-]{11}$/.test(String(value || ""))
+}
+
+function getVideoById(videoId) {
+  const id = Number(videoId)
+  if (!Number.isFinite(id) || id <= 0) return null
+  return adminVideosCache.find(v => Number(v.id) === id) || null
+}
+
+function renderPreviewPlayer(video) {
+  previewPlayer.innerHTML = ""
+  if (!video) {
+    const empty = document.createElement("div")
+    empty.className = "muted"
+    empty.textContent = "No video selected"
+    previewPlayer.appendChild(empty)
+    return
+  }
+
+  const source = String(video.source || "local").toLowerCase()
+  const videoId = String(video.videoId || "")
+
+  if ((source === "youtube" || source === "local" || source === "watchmode" || source === "omdb" || source === "trakt") && isYouTubeLikeId(videoId)) {
+    const frame = document.createElement("iframe")
+    frame.src = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0`
+    frame.allow = "autoplay; encrypted-media; picture-in-picture"
+    frame.allowFullscreen = true
+    previewPlayer.appendChild(frame)
+    return
+  }
+
+  if ((source === "watchmode" || source === "omdb" || source === "trakt") && String(video.title || "").trim()) {
+    const frame = document.createElement("iframe")
+    const q = encodeURIComponent(`${String(video.title || "").trim()} trailer`)
+    frame.src = `https://www.youtube.com/embed?autoplay=1&listType=search&list=${q}`
+    frame.allow = "autoplay; encrypted-media; picture-in-picture"
+    frame.allowFullscreen = true
+    previewPlayer.appendChild(frame)
+    return
+  }
+
+  if (String(video.playbackUrl || "").trim()) {
+    const nativeVideo = document.createElement("video")
+    nativeVideo.src = video.playbackUrl
+    nativeVideo.controls = true
+    nativeVideo.autoplay = true
+    nativeVideo.playsInline = true
+    previewPlayer.appendChild(nativeVideo)
+    return
+  }
+
+  const note = document.createElement("div")
+  note.className = "muted"
+  note.textContent = "Playback source not available for this video"
+  previewPlayer.appendChild(note)
+}
+
+function renderPreviewMeta(video) {
+  if (!video) {
+    previewMeta.textContent = "Select any video from list to preview and moderate."
+    return
+  }
+  const status = String(video.status || "unknown")
+  const source = String(video.source || "local").toUpperCase()
+  const visibility = video.homepage ? "Public" : "Private"
+  previewMeta.textContent = `ID ${video.id} | ${video.title} | ${source} | Status: ${status} | ${visibility}`
+}
+
+function updatePreviewButtons(video) {
+  const hasVideo = Boolean(video)
+  previewApproveBtn.disabled = !hasVideo
+  previewRejectBtn.disabled = !hasVideo
+  previewToggleBtn.disabled = !hasVideo || String(video.status || "") !== "approved"
+  previewToggleBtn.textContent = hasVideo ? (video.homepage ? "Make Private" : "Make Public") : "Public/Private"
+}
+
+function selectPreviewById(videoId) {
+  const video = getVideoById(videoId)
+  selectedPreviewId = video ? Number(video.id) : 0
+  renderPreviewMeta(video)
+  renderPreviewPlayer(video)
+  updatePreviewButtons(video)
+}
+
+function createVideoRow(video, actions) {
+  const row = document.createElement("div")
+  row.className = "video-row"
+  row.addEventListener("click", () => selectPreviewById(video.id))
+
+  const thumb = document.createElement("img")
+  thumb.src = getThumb(video)
+  thumb.alt = `${video.title} thumbnail`
+
+  const info = document.createElement("div")
+  info.className = "video-row-info"
+
+  const title = document.createElement("div")
+  title.className = "video-row-title"
+  title.textContent = video.title
+
+  const meta = document.createElement("div")
+  meta.className = "video-row-meta"
+  const homepageText = video.homepage ? "Homepage: Yes" : "Homepage: No"
+  const sourceLabel = String(video.source || "local").toUpperCase()
+  meta.textContent = `ID ${video.id} | Source API: ${sourceLabel} | Category: ${video.category || "general"} | Language: ${video.language || "en"} | ${homepageText}`
+
+  const actionWrap = document.createElement("div")
+  actionWrap.className = "video-row-actions"
+  actions.forEach(action => actionWrap.appendChild(action))
+
+  info.appendChild(title)
+  info.appendChild(meta)
+  info.appendChild(actionWrap)
+
+  row.appendChild(thumb)
+  row.appendChild(info)
+  return row
+}
+
+function renderList(container, videos, emptyLabel, mapper) {
+  container.innerHTML = ""
+  if (!videos.length) {
+    const empty = document.createElement("div")
+    empty.className = "muted"
+    empty.textContent = emptyLabel
+    container.appendChild(empty)
+    return
+  }
+  videos.forEach(video => container.appendChild(mapper(video)))
+}
+
+function fillSelect(select, values, allLabel) {
+  select.innerHTML = ""
+  const allOption = document.createElement("option")
+  allOption.value = "all"
+  allOption.textContent = allLabel
+  select.appendChild(allOption)
+
+  values.forEach(value => {
+    const option = document.createElement("option")
+    option.value = value
+    option.textContent = value
+    select.appendChild(option)
+  })
+}
+
+function updateTabButtons() {
+  tabHomepage.classList.toggle("active", currentTab === "homepage")
+  tabApproved.classList.toggle("active", currentTab === "approved")
+  tabPending.classList.toggle("active", currentTab === "pending")
+  tabRejected.classList.toggle("active", currentTab === "rejected")
+}
+
+function actionsForTab(video, tab) {
+  if (tab === "homepage") {
+    return [
+      createActionButton("Preview", "ghost", () => selectPreviewById(video.id)),
+      createActionButton("Hide", "ghost", async () => {
+        await adminFetch(`/api/admin/toggle/${video.id}`, { method: "POST" })
+        await refreshDashboard()
+      }),
+      createActionButton("Reject", "danger", async () => {
+        await adminFetch(`/api/admin/reject/${video.id}`, { method: "POST" })
+        await refreshDashboard()
+      })
+    ]
+  }
+
+  if (tab === "approved") {
+    return [
+      createActionButton("Preview", "ghost", () => selectPreviewById(video.id)),
+      createActionButton(video.homepage ? "Hide" : "Show", "ghost", async () => {
+        await adminFetch(`/api/admin/toggle/${video.id}`, { method: "POST" })
+        await refreshDashboard()
+      }),
+      createActionButton("Dub All", "ok", async () => {
+        const result = await adminFetch(`/api/admin/dub-all/${video.id}`, {
+          method: "POST",
+          body: JSON.stringify({ provider: "generic" })
+        })
+        setMessage(`${result.queued} dubbing jobs queued for video ${video.id}`)
+      }),
+      createActionButton("Reject", "danger", async () => {
+        await adminFetch(`/api/admin/reject/${video.id}`, { method: "POST" })
+        await refreshDashboard()
+      })
+    ]
+  }
+
+  if (tab === "pending") {
+    return [
+      createActionButton("Preview", "ghost", () => selectPreviewById(video.id)),
+      createActionButton("Approve", "ok", async () => {
+        await adminFetch(`/api/admin/approve/${video.id}`, { method: "POST" })
+        await refreshDashboard()
+      }),
+      createActionButton("Reject", "danger", async () => {
+        await adminFetch(`/api/admin/reject/${video.id}`, { method: "POST" })
+        await refreshDashboard()
+      })
+    ]
+  }
+
+  return [
+    createActionButton("Preview", "ghost", () => selectPreviewById(video.id)),
+    createActionButton("Approve", "ok", async () => {
+      await adminFetch(`/api/admin/approve/${video.id}`, { method: "POST" })
+      await refreshDashboard()
+    })
+  ]
+}
+
+function renderCurrentTab() {
+  let list = moderationBuckets.homepage
+  let emptyText = "No homepage videos"
+
+  if (currentTab === "approved") {
+    list = moderationBuckets.approved
+    emptyText = "No approved videos"
+  }
+  if (currentTab === "pending") {
+    list = moderationBuckets.pending
+    emptyText = "No pending videos"
+  }
+  if (currentTab === "rejected") {
+    list = moderationBuckets.rejected
+    emptyText = "No rejected videos"
+  }
+
+  renderList(moderationList, list, emptyText, video => createVideoRow(video, actionsForTab(video, currentTab)))
+  updateTabButtons()
+}
+
+async function loadFilterOptions() {
+  try {
+    const [categoryData, languageData, sourceData] = await Promise.all([
+      adminFetch("/api/admin/categories"),
+      adminFetch("/api/admin/languages"),
+      adminFetch("/api/admin/sources")
+    ])
+
+    const categories = Array.isArray(categoryData.categories) ? categoryData.categories : []
+    const languages = Array.isArray(languageData.languages) ? languageData.languages : []
+    const sources = Array.isArray(sourceData.sources) ? sourceData.sources : []
+
+    fillSelect(categoryFilter, categories, "All Categories")
+    fillSelect(languageFilter, languages, "All Languages")
+    fillSelect(sourceFilter, sources, "All Sources")
+
+    categoryFilter.value = currentCategory
+    languageFilter.value = currentLanguage
+    sourceFilter.value = currentSource
+  } catch {
+    // ignore
+  }
+}
+
+async function loadProviders() {
+  try {
+    const providers = await adminFetch("/api/admin/providers")
+    providerStatus.innerHTML = ""
+    Object.entries(providers).forEach(([name, config]) => {
+      const badge = document.createElement("span")
+      badge.className = `provider-badge ${config.enabled ? "on" : "off"}`
+      badge.textContent = config.enabled ? `${name}: ON` : `${name}: OFF (${config.keyName})`
+      providerStatus.appendChild(badge)
+    })
+  } catch {
+    providerStatus.innerHTML = ""
+  }
+}
+
+async function refreshStats() {
+  const stats = await adminFetch("/api/admin/stats")
+  statTotal.textContent = stats.total
+  statPending.textContent = stats.pending
+  statApproved.textContent = stats.approved
+  statRejected.textContent = stats.rejected
+  statHomepage.textContent = stats.homepage
+}
+
+async function refreshLists() {
+  const params = new URLSearchParams({ status: "all" })
+  if (currentSearch) params.set("q", currentSearch)
+  if (currentCategory !== "all") params.set("category", currentCategory)
+  if (currentLanguage !== "all") params.set("language", currentLanguage)
+  if (currentSource !== "all") params.set("source", currentSource)
+
+  const videos = await adminFetch(`/api/admin/videos?${params.toString()}`)
+  adminVideosCache = Array.isArray(videos) ? videos : []
+
+  moderationBuckets.homepage = adminVideosCache.filter(v => v.status === "approved" && v.homepage)
+  moderationBuckets.approved = adminVideosCache.filter(v => v.status === "approved")
+  moderationBuckets.pending = adminVideosCache.filter(v => v.status === "pending")
+  moderationBuckets.rejected = adminVideosCache.filter(v => v.status === "rejected")
+
+  renderCurrentTab()
+
+  if (selectedPreviewId) {
+    const selected = getVideoById(selectedPreviewId)
+    if (selected) selectPreviewById(selected.id)
+    else selectPreviewById(0)
+  }
+}
+
+async function refreshDashboard() {
+  try {
+    await Promise.all([refreshStats(), refreshLists(), loadProviders(), loadFilterOptions()])
+    setMessage("Dashboard updated")
+  } catch (err) {
+    setMessage(err.message, true)
+  }
+}
+
+function setLoggedInUI(isLoggedIn) {
+  loginCard.classList.toggle("hidden", isLoggedIn)
+  dashboard.classList.toggle("hidden", !isLoggedIn)
+  sessionInfo.textContent = isLoggedIn ? "Logged in" : "Not logged in"
+}
+
+async function verifySession() {
+  if (!getToken()) {
+    setLoggedInUI(false)
+    return
+  }
+  try {
+    await adminFetch("/api/admin/me")
+    setLoggedInUI(true)
+    await refreshDashboard()
+  } catch {
+    clearToken()
+    setLoggedInUI(false)
+  }
+}
+
+loginBtn.addEventListener("click", async () => {
+  try {
+    const password = passwordInput.value
+    const result = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    }).then(async res => {
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload.error || "Login failed")
+      return payload
+    })
+
+    setToken(result.token)
+    passwordInput.value = ""
+    setLoggedInUI(true)
+    await refreshDashboard()
+    setMessage("Login successful")
+  } catch (err) {
+    setMessage(err.message, true)
+  }
+})
+
+logoutBtn.addEventListener("click", async () => {
+  try {
+    if (getToken()) await adminFetch("/api/admin/logout", { method: "POST" })
+  } catch {
+    // ignore
+  }
+  clearToken()
+  setLoggedInUI(false)
+  setMessage("Logged out")
+})
+
+searchBtn.addEventListener("click", async () => {
+  currentSearch = adminSearch.value.trim()
+  currentCategory = categoryFilter.value
+  currentLanguage = languageFilter.value
+  currentSource = sourceFilter.value
+  await refreshDashboard()
+})
+
+clearSearchBtn.addEventListener("click", async () => {
+  currentSearch = ""
+  currentCategory = "all"
+  currentLanguage = "all"
+  currentSource = "all"
+  adminSearch.value = ""
+  categoryFilter.value = "all"
+  languageFilter.value = "all"
+  sourceFilter.value = "all"
+  await refreshDashboard()
+})
+
+categoryFilter.addEventListener("change", async () => {
+  currentCategory = categoryFilter.value
+  await refreshDashboard()
+})
+
+languageFilter.addEventListener("change", async () => {
+  currentLanguage = languageFilter.value
+  await refreshDashboard()
+})
+
+sourceFilter.addEventListener("change", async () => {
+  currentSource = sourceFilter.value
+  await refreshDashboard()
+})
+
+adminSearch.addEventListener("keydown", async event => {
+  if (event.key === "Enter") {
+    currentSearch = adminSearch.value.trim()
+    currentCategory = categoryFilter.value
+    currentLanguage = languageFilter.value
+    currentSource = sourceFilter.value
+    await refreshDashboard()
+  }
+})
+
+importBtn.addEventListener("click", async () => {
+  try {
+    const query = importQuery.value.trim()
+    const maxResults = Number(importCount.value) || 10
+    const provider = importProvider.value
+    if (!query) throw new Error("Please enter a search query")
+
+    const result = await adminFetch("/api/admin/import-videos", {
+      method: "POST",
+      body: JSON.stringify({ query, maxResults, provider })
+    })
+
+    let message = `${result.imported} videos imported to Pending`
+    if (Array.isArray(result.providerErrors) && result.providerErrors.length > 0) {
+      const failed = result.providerErrors.map(item => `${item.provider}: ${item.error}`).join("; ")
+      message += ` | Some providers failed -> ${failed}`
+    }
+
+    setMessage(message)
+    importQuery.value = ""
+    await refreshDashboard()
+  } catch (err) {
+    setMessage(err.message, true)
+  }
+})
+
+tabHomepage.addEventListener("click", () => { currentTab = "homepage"; renderCurrentTab() })
+tabApproved.addEventListener("click", () => { currentTab = "approved"; renderCurrentTab() })
+tabPending.addEventListener("click", () => { currentTab = "pending"; renderCurrentTab() })
+tabRejected.addEventListener("click", () => { currentTab = "rejected"; renderCurrentTab() })
+
+previewApproveBtn.addEventListener("click", async () => {
+  if (!selectedPreviewId) return
+  await adminFetch(`/api/admin/approve/${selectedPreviewId}`, { method: "POST" })
+  await refreshDashboard()
+})
+
+previewToggleBtn.addEventListener("click", async () => {
+  if (!selectedPreviewId) return
+  await adminFetch(`/api/admin/toggle/${selectedPreviewId}`, { method: "POST" })
+  await refreshDashboard()
+})
+
+previewRejectBtn.addEventListener("click", async () => {
+  if (!selectedPreviewId) return
+  await adminFetch(`/api/admin/reject/${selectedPreviewId}`, { method: "POST" })
+  await refreshDashboard()
+})
+
+verifySession()
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NovaPlay</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="home-body">
+
+<header class="home-header">
+  <div class="left-header">
+    <button class="icon-btn" aria-label="Menu">N</button>
+    <div class="logo"><img src="/assets/novaplay-logo.svg" alt="NovaPlay" style="height:36px;width:auto"></div>
+  </div>
+
+  <div class="search-wrap">
+    <input id="search" placeholder="Search videos">
+    <button class="search-btn" aria-label="Search">Search</button>
+  </div>
+
+  <div class="right-header">
+    <button id="languageToggleBtn" class="icon-btn" aria-label="Languages">L</button>
+    <div id="languageMenu" class="language-menu hidden">
+      <select id="headerLanguageSelect" class="header-language-select">
+        <option value="original">Original Audio</option>
+      </select>
+    </div>
+    <button class="icon-btn" aria-label="Upload">+</button>
+    <button class="icon-btn" aria-label="Notifications">N</button>
+    <div class="avatar">N</div>
+  </div>
+</header>
+
+<div class="home-layout">
+  <aside class="sidebar">
+    <a class="side-link active" href="/">Home</a>
+    <a class="side-link" href="/live.html">Live TV</a>    <a class="side-link" href="#">Shorts</a>
+    <a class="side-link" href="#">Subscriptions</a>
+    <a class="side-link" href="#">History</a>
+    <a class="side-link" href="#">Liked Videos</a>
+
+    <div class="side-filter-block">
+      <label for="sidebarCategory">Category</label>
+      <select id="sidebarCategory" class="side-select">
+        <option value="all">All Categories</option>
+      </select>
+    </div>
+
+    <div class="side-filter-block">
+      <label for="sidebarLanguage">Language</label>
+      <select id="sidebarLanguage" class="side-select">
+        <option value="all">All Languages</option>
+      </select>
+    </div>
+  </aside>
+
+  <main class="feed-area">
+    <div class="chips-row">
+      <button class="chip active">All</button>
+      <button class="chip">Music</button>
+      <button class="chip">Gaming</button>
+      <button class="chip">Live</button>
+      <button class="chip">Technology</button>
+      <button class="chip">Movies</button>
+    </div>
+
+    <section class="shorts-section">
+      <div class="section-head">Shorts</div>
+      <div id="shorts" class="shorts-row"></div>
+    </section>
+
+    <div id="videos"></div>
+  </main>
+</div>
+
+<div id="aiSupport" class="ai-support collapsed">
+  <button id="aiToggleBtn" class="ai-toggle">AI Help</button>
+  <div id="aiPanel" class="ai-panel hidden">
+    <div class="ai-title">NovaPlay AI Guide</div>
+    <div id="aiReply" class="ai-reply">Namaste! Main aapko app use karne me help kar sakta hoon.</div>
+    <input id="aiInput" placeholder="Ask: kaise use kare? movies suggest karo...">
+    <button id="aiAskBtn" class="search-btn">Ask AI</button>
+    <div id="aiReco" class="ai-reco"></div>
+  </div>
+</div>
+<footer class="home-footer">
+  <div>NovaPlay</div>
+  <div class="footer-links">
+    <a href="#">About</a>
+    <a href="#">Press</a>
+    <a href="#">Copyright</a>
+    <a href="#">Contact us</a>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
