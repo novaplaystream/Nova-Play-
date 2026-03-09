@@ -1,18 +1,19 @@
 {
-    "name": "novaplay",
-    "version": "1.0.0",
-    "main": "server.js",
-    "scripts": {
-        "start": "node server.js",
-        "check": "node --check server.js && node --check lib/trending.js && node --check public/script.js",
-        "test": "node tests/run-tests.js"
-    },
-    "dependencies": {
-        "dotenv": "^16.6.1",
-        "express": "^4.18.2",
-        "mongoose": "^8.0.0"
-    }
+  "name": "novaplay",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check lib/trending.js && node --check public/script.js",
+    "test": "node tests/run-tests.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0"
+  }
 }
+
 
 
 
