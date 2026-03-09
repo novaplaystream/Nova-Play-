@@ -6,17 +6,16 @@ const dns = require("node:dns/promises")
 const net = require("node:net")
 const fs = require("fs/promises")
 const { getTrendingVideos } = require("./lib/trending")
-const express = require("express")
-const fs = require("fs")
-const path = require("path")
+require("dotenv").config()
 
+const express = require("express")
 const mongoose = require("mongoose")
 
 mongoose.connect(process.env.MONGO_URI)
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log(err))
 
-mongoose.connection.on("connected", () => {
-  console.log("MongoDB connected")
-})
+const app = express()
 const VIDEOS_FILE = path.join(__dirname, "database", "videos.json")
 const COMMENTS_FILE = path.join(__dirname, "database", "comments.json")
 const FAVORITES_FILE = path.join(__dirname, "favorites.json")
@@ -2987,6 +2986,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
