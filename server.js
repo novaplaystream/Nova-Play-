@@ -1062,8 +1062,8 @@ async function getVideos() {
 }
 
 async function saveVideos(videos) {
-  const normalized = videos.map((video, index) => normalizeVideo(video, index + 1))
-  await writeJsonQueued(VIDEOS_FILE, normalized)
+  await Video.deleteMany({})
+  await Video.insertMany(videos)
 }
 
 async function getComments() {
@@ -2983,6 +2983,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
