@@ -6,7 +6,17 @@ const dns = require("node:dns/promises")
 const net = require("node:net")
 const fs = require("fs/promises")
 const { getTrendingVideos } = require("./lib/trending")
+const express = require("express")
+const fs = require("fs")
+const path = require("path")
 
+const mongoose = require("mongoose")
+
+mongoose.connect(process.env.MONGO_URI)
+
+mongoose.connection.on("connected", () => {
+  console.log("MongoDB connected")
+})
 const VIDEOS_FILE = path.join(__dirname, "database", "videos.json")
 const COMMENTS_FILE = path.join(__dirname, "database", "comments.json")
 const FAVORITES_FILE = path.join(__dirname, "favorites.json")
@@ -2977,6 +2987,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
