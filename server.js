@@ -6,7 +6,6 @@ const dns = require("node:dns/promises")
 const net = require("node:net")
 const fs = require("fs/promises")
 const { getTrendingVideos } = require("./lib/trending")
-require("dotenv").config()
 const mongoose = require("mongoose")
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
@@ -2983,6 +2982,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
