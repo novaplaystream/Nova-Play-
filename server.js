@@ -1058,8 +1058,7 @@ async function writeJsonQueued(filePath, data) {
 }
 
 async function getVideos() {
-  const raw = await readJson(VIDEOS_FILE, [])
-  return raw.map((video, index) => normalizeVideo(video, index + 1))
+  return await Video.find({})
 }
 
 async function saveVideos(videos) {
@@ -2984,6 +2983,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
