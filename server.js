@@ -1,4 +1,5 @@
 require("dotenv").config()
+
 const express = require("express")
 const path = require("path")
 const crypto = require("crypto")
@@ -7,6 +8,7 @@ const net = require("node:net")
 const fs = require("fs/promises")
 const { getTrendingVideos } = require("./lib/trending")
 const mongoose = require("mongoose")
+const Video = require("./models/Video")
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err))
@@ -2982,6 +2984,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
