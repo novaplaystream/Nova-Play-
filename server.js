@@ -9,6 +9,19 @@ const fs = require("fs/promises")
 const { getTrendingVideos } = require("./lib/trending")
 const mongoose = require("mongoose")
 const Video = require("./models/Video")
+const YOUTUBE_KEYS = [
+  process.env.YOUTUBE_API_KEY,
+  process.env.YOUTUBE_API_KEY2,
+  process.env.YOUTUBE_API_KEY3
+].filter(Boolean)
+
+let youtubeKeyIndex = 0
+
+function getYouTubeKey() {
+  const key = YOUTUBE_KEYS[youtubeKeyIndex % YOUTUBE_KEYS.length]
+  youtubeKeyIndex++
+  return key
+}
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err))
@@ -2983,6 +2996,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
