@@ -1,6 +1,8 @@
 const mongoose = require("mongoose")
 
-const videoSchema = new mongoose.Schema({
+const videoSchema = new mongoose.Schema
+
+ ({
  title: String,
  videoId: { type: String, unique: true },
  views: Number,
@@ -12,5 +14,5 @@ const videoSchema = new mongoose.Schema({
  approved: Boolean,
  homepage: Boolean
 })
-
+ videoSchema.index({ videoId: 1 })
 module.exports = mongoose.model("Video", videoSchema)
