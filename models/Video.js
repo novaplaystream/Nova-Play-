@@ -2,7 +2,7 @@ const mongoose = require("mongoose")
 
 const videoSchema = new mongoose.Schema({
  title: String,
- videoId: String,
+ videoId: { type: String, unique: true },
  views: Number,
  likes: Number,
  category: String,
