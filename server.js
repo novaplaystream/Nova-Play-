@@ -14,7 +14,7 @@ mongoose.connect(process.env.MONGO_URI)
 .catch(err => console.log(err))
 
 const app = express()
-const VIDEOS_FILE = path.join(__dirname, "database", "videos.json")
+
 const COMMENTS_FILE = path.join(__dirname, "database", "comments.json")
 const FAVORITES_FILE = path.join(__dirname, "favorites.json")
 const DUBBING_JOBS_FILE = path.join(__dirname, "dubbing-jobs.json")
@@ -2985,6 +2985,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
