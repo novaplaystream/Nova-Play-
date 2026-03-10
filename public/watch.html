@@ -292,39 +292,88 @@ function startDubAudio(url) {
   }
 }
 
-function getWatchUrl(videoId) {
-  const params = new URLSearchParams({ id: String(videoId) })
-  if (currentDubLanguage && currentDubLanguage !== "original") {
-    params.set("lang", currentDubLanguage)
-  }
-  return `${location.pathname}?${params.toString()}`
+<script>
+
+async function loadVideo(){
+
+const params = new URLSearchParams(window.location.search)
+const id = params.get("id")
+
+if(!id){
+document.getElementById("player").innerHTML="Video ID missing"
+return
 }
 
-function destroyPlayerState() {
-  stopDubAudio()
+try{
 
-  if (ytPlayer && typeof ytPlayer.destroy === "function") {
-    ytPlayer.destroy()
-    ytPlayer = null
-  }
+const res = await fetch("/api/videos")
+const videos = await res.json()
 
-  if (currentNativeVideo) {
-    currentNativeVideo.pause()
-    currentNativeVideo.src = ""
-    currentNativeVideo = null
-  }
+const video = videos.find(v => (v._id || v.id) == id)
+
+if(!video){
+document.getElementById("player").innerHTML="Video not found"
+return
 }
 
-function loadYouTubeApi() {
-  if (window.YT && window.YT.Player) return Promise.resolve(window.YT)
-  if (ytApiReadyPromise) return ytApiReadyPromise
+renderPlayer(video)
 
-  ytApiReadyPromise = new Promise(resolve => {
-    const script = document.createElement("script")
-    script.src = "https://www.youtube.com/iframe_api"
-    document.body.appendChild(script)
-    window.onYouTubeIframeAPIReady = () => resolve(window.YT)
-  })
+}catch(err){
+
+console.log(err)
+document.getElementById("player").innerHTML="Unable to load video"
+
+}
+
+}
+
+function renderPlayer(video){
+
+const player = document.getElementById("player")
+
+if(video.source === "youtube"){
+
+player.innerHTML = `
+<iframe
+width="100%"
+height="500"
+src="https://www.youtube.com/embed/${video.videoId}"
+frameborder="0"
+allowfullscreen>
+</iframe>
+`
+
+}
+
+else if(video.source === "vimeo"){
+
+player.innerHTML = `
+<iframe
+src="https://player.vimeo.com/video/${video.videoId}"
+width="100%"
+height="500"
+frameborder="0"
+allowfullscreen>
+</iframe>
+`
+
+}
+
+else{
+
+player.innerHTML = `
+<video controls autoplay width="100%">
+<source src="${video.playbackUrl}">
+</video>
+`
+
+}
+
+}
+
+loadVideo()
+
+</script>
 
   return ytApiReadyPromise
 }
@@ -893,6 +942,7 @@ initWatchPage()
 </script>
 </body>
 </html>
+
 
 
 
