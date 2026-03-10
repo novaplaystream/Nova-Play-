@@ -87,7 +87,6 @@ console.log("Live channel error",e)
 
 
 // ===== AUTO SCROLL =====
-
 function autoScrollRows(){
 
 const rows=document.querySelectorAll(".row-scroll")
@@ -112,6 +111,8 @@ row.scrollLeft=0
 
 }
 
+autoScrollRows()
+
 
 
 // ===== RUN =====
@@ -122,6 +123,7 @@ loadLiveChannels()
 setTimeout(()=>{
 autoScrollRows()
 },1000)
+
 
 
 
