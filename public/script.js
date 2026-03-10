@@ -88,6 +88,31 @@ loadHomepage()
 loadLiveChannels()
 
 
+function autoScrollRows(){
+
+const rows=document.querySelectorAll(".row-scroll")
+
+rows.forEach(row=>{
+
+let scrollAmount=0
+
+setInterval(()=>{
+
+row.scrollLeft+=1
+scrollAmount++
+
+if(scrollAmount>row.scrollWidth){
+scrollAmount=0
+row.scrollLeft=0
+}
+
+},30)
+
+})
+
+}
+
+autoScrollRows()
 
 
 
