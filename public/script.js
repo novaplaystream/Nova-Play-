@@ -775,6 +775,30 @@ newsRow.innerHTML += card
 
 loadCategoryRows()
 
+async function loadLiveChannels(){
+
+const container = document.getElementById("channels")
+
+if(!container) return
+
+const res = await fetch("/api/live-tv")
+const channels = await res.json()
+
+channels.slice(0,12).forEach(ch=>{
+
+container.innerHTML += `
+<div class="channel-card">
+<img src="${ch.logo || 'https://via.placeholder.com/200'}">
+<h3>${ch.name}</h3>
+<a href="/live.html?id=${ch.id}">Watch Live</a>
+</div>
+`
+
+})
+
+}
+
+loadLiveChannels()
 
 
 
