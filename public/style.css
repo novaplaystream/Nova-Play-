@@ -801,6 +801,39 @@ margin:10px 0;
 background:red;
 color:white;
 padding:5px 10px;
+
+
+
+#trendingVideos{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+margin-top:20px;
+}
+
+.video-card{
+background:#111;
+padding:10px;
+border-radius:10px;
+}
+
+.video-card img{
+width:100%;
+border-radius:8px;
+}
+
+.video-card h3{
+font-size:14px;
+margin:8px 0;
+color:white;
+}
+
+
+
+
+
+  
 text-decoration:none;
 border-radius:5px;
 }
+
