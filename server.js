@@ -1878,7 +1878,9 @@ async function importByProvider({ provider, query, maxResults, env }) {
 
 async function persistImportedVideos(importedAll) {
   const videos = await getVideos()
-  const existingKeys = new Set(videos.map(v => `${v.source}:${v.videoId}`))
+  const existingKeys = new Set(
+  videos.map(v => `${v.videoId}`)
+)
   let nextId = videos.reduce((max, v) => Math.max(max, Number(v.id) || 0), 0) + 1
 
   const newVideos = []
@@ -2983,6 +2985,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
