@@ -125,6 +125,23 @@ autoScrollRows()
 },1000)
 
 
+document.querySelectorAll(".row").forEach(section=>{
+
+const row=section.querySelector(".row-scroll")
+const next=section.querySelector(".next")
+const prev=section.querySelector(".prev")
+
+if(!row) return
+
+next?.addEventListener("click",()=>{
+row.scrollBy({left:300,behavior:"smooth"})
+})
+
+prev?.addEventListener("click",()=>{
+row.scrollBy({left:-300,behavior:"smooth"})
+})
+
+})
 
 
 
