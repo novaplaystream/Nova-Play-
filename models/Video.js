@@ -14,5 +14,5 @@ const videoSchema = new mongoose.Schema
  approved: Boolean,
  homepage: Boolean
 })
- videoSchema.index({ videoId: 1 })
+
 module.exports = mongoose.model("Video", videoSchema)
