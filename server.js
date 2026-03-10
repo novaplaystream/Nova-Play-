@@ -1817,11 +1817,18 @@ async function createDubbingJobs({ videoId, languages, provider, env }) {
 }
 async function importByProvider({ provider, query, maxResults, env }) {
   if (provider === "youtube") {
-    if (!env.YOUTUBE_API_KEY) {
-      throw createHttpError(400, "YOUTUBE_API_KEY is not configured")
-    }
-    return importFromYouTube({ query, maxResults, apiKey: env.YOUTUBE_API_KEY })
+  const apiKey = getYouTubeKey()
+
+  if (!apiKey) {
+    throw createHttpError(400, "YOUTUBE_API_KEY is not configured")
   }
+
+  return importFromYouTube({
+    query,
+    maxResults,
+    apiKey: apiKey
+  })
+}
 
   if (provider === "vimeo") {
     if (!env.VIMEO_ACCESS_TOKEN) {
@@ -2996,6 +3003,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
