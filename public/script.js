@@ -845,6 +845,45 @@ trending.innerHTML += card
 loadHomepage()
 
 
+async function loadHomepage(){
+
+const res = await fetch("/api/videos")
+
+const videos = await res.json()
+
+const trending = document.getElementById("trendingVideos")
+const movies = document.getElementById("moviesRow")
+const music = document.getElementById("musicRow")
+
+videos.forEach(v=>{
+
+const card = `
+<div class="card">
+
+<img src="${v.thumbnailUrl || v.thumbnail}">
+
+<h4>${v.title}</h4>
+
+</div>
+`
+
+if(trending && trending.children.length < 8){
+trending.innerHTML += card
+}
+
+if(v.category==="movies" && movies){
+movies.innerHTML += card
+}
+
+if(v.category==="music" && music){
+music.innerHTML += card
+}
+
+})
+
+}
+
+loadHomepage()
 
 
 
