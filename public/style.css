@@ -859,3 +859,37 @@ padding:10px;
 width:100%;
 border-radius:8px;
 }
+
+#channels{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+margin-top:20px;
+}
+
+.channel-card{
+background:#111;
+padding:10px;
+border-radius:10px;
+text-align:center;
+}
+
+.channel-card img{
+width:100%;
+border-radius:8px;
+}
+
+.channel-card h3{
+font-size:14px;
+margin:8px 0;
+color:white;
+}
+
+.channel-card a{
+display:inline-block;
+background:red;
+color:white;
+padding:5px 10px;
+text-decoration:none;
+border-radius:5px;
+}
