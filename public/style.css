@@ -349,9 +349,9 @@ margin:0;
 /* HOVER EFFECT */
 
 .card:hover{
-transform:scale(1.12);
-z-index:10;
-box-shadow:0 10px 30px rgba(0,0,0,.8);
+transform:scale(1.08);
+box-shadow:0 10px 25px rgba(0,0,0,.7);
+z-index:5;
 }
 
 /* BUTTON */
@@ -393,6 +393,7 @@ row.scrollLeft=0
 }
 
 autoScrollRows()
+
 
 
 
