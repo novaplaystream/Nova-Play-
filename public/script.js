@@ -733,6 +733,47 @@ container.innerHTML += `
 
 loadTrendingVideos()
 
+async function loadCategoryRows(){
+
+const res = await fetch("/api/videos")
+const videos = await res.json()
+
+const moviesRow = document.getElementById("moviesRow")
+const musicRow = document.getElementById("musicRow")
+const gamingRow = document.getElementById("gamingRow")
+const newsRow = document.getElementById("newsRow")
+
+videos.forEach(video=>{
+
+const card = `
+<div class="video-card">
+<img src="${video.thumbnailUrl}">
+<p>${video.title}</p>
+<a href="/watch.html?id=${video.id}">Watch</a>
+</div>
+`
+
+if(video.category==="movies" && moviesRow){
+moviesRow.innerHTML += card
+}
+
+if(video.category==="music" && musicRow){
+musicRow.innerHTML += card
+}
+
+if(video.category==="gaming" && gamingRow){
+gamingRow.innerHTML += card
+}
+
+if(video.category==="news" && newsRow){
+newsRow.innerHTML += card
+}
+
+})
+
+}
+
+loadCategoryRows()
 
 
 
