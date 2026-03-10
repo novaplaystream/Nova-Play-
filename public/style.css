@@ -393,24 +393,14 @@ setInterval(()=>{
 row.scrollLeft+=1
 scrollAmount++
 
-if(scrollAmount>row.scrollWidth){
-scrollAmount=0
-row.scrollLeft=0
-}
 
-},30)
-
-})
-
-}
-
-autoScrollRows()
 
 .content{
 width:100%;
 padding:20px 30px;
 box-sizing:border-box;
 }
+
 
 
 
