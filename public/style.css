@@ -307,29 +307,39 @@ margin-top:10px;
 
 /* ROWS */
 
+/* ROW SECTION */
+
 .row{
-margin-bottom:35px;
+margin-bottom:40px;
 }
+
+.row h2{
+margin-bottom:12px;
+}
+
+/* SCROLL ROW */
 
 .row-scroll{
 display:flex;
+flex-direction:row;
 gap:16px;
 overflow-x:auto;
+overflow-y:hidden;
 padding-bottom:10px;
+width:100%;
 }
 
 .row-scroll::-webkit-scrollbar{
 display:none;
 }
 
-/* CARDS */
+/* CARD */
 
 .card{
 background:#141a22;
 border-radius:10px;
 width:180px;
-flex-shrink:0;
-overflow:hidden;
+flex:0 0 auto;
 transition:transform .25s;
 cursor:pointer;
 }
@@ -338,6 +348,7 @@ cursor:pointer;
 width:100%;
 height:100px;
 object-fit:cover;
+border-radius:10px;
 }
 
 .card h4{
@@ -346,13 +357,22 @@ padding:6px;
 margin:0;
 }
 
-/* HOVER EFFECT */
+.card a{
+display:block;
+background:#ff0033;
+color:white;
+text-align:center;
+padding:6px;
+margin:6px;
+border-radius:6px;
+text-decoration:none;
+}
 
 .card:hover{
 transform:scale(1.08);
 box-shadow:0 10px 25px rgba(0,0,0,.7);
-z-index:5;
 }
+
 
 /* BUTTON */
 
@@ -393,6 +413,7 @@ row.scrollLeft=0
 }
 
 autoScrollRows()
+
 
 
 
