@@ -143,6 +143,10 @@ row.scrollBy({left:-400,behavior:"smooth"})
 
 })
 
+document.addEventListener("DOMContentLoaded",()=>{
+loadHomepage()
+loadLiveChannels()
+})
 
 
 
