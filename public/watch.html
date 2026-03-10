@@ -1025,6 +1025,21 @@ loadVideo()
 
 </script>
 
+document.getElementById("likeBtn")?.addEventListener("click",()=>{
+alert("Video liked 👍")
+})
+
+document.getElementById("shareBtn")?.addEventListener("click",()=>{
+
+navigator.clipboard.writeText(window.location.href)
+
+alert("Link copied")
+
+})
+
+document.getElementById("saveBtn")?.addEventListener("click",()=>{
+alert("Video saved to favorites ⭐")
+})
 
 
 
