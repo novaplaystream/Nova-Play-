@@ -307,16 +307,19 @@ margin-top:10px;
 
 /* ROWS */
 .row{
+width:100%;
 margin-bottom:40px;
 }
 
 .row-scroll{
 display:flex;
+flex-direction:row;
 flex-wrap:nowrap;
 gap:16px;
 overflow-x:auto;
-padding-bottom:10px;
+overflow-y:hidden;
 width:100%;
+padding-bottom:10px;
 }
 
 .row-scroll::-webkit-scrollbar{
@@ -344,17 +347,17 @@ display:none;
 .card{
 background:#141a22;
 border-radius:10px;
-width:180px;
+width:200px;
 flex:0 0 auto;
+overflow:hidden;
 cursor:pointer;
 transition:.25s;
 }
 
 .card img{
 width:100%;
-height:100px;
+height:120px;
 object-fit:cover;
-border-radius:10px;
 }
 
 .card:hover{
@@ -408,6 +411,7 @@ width:100%;
 padding:20px 30px;
 box-sizing:border-box;
 }
+
 
 
 
