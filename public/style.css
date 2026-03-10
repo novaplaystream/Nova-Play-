@@ -380,26 +380,12 @@ margin:8px;
 font-size:13px;
 }
 
-function autoScrollRows(){
-
-const rows=document.querySelectorAll(".row-scroll")
-
-rows.forEach(row=>{
-
-let scrollAmount=0
-
-setInterval(()=>{
-
-row.scrollLeft+=1
-scrollAmount++
-
-
-
 .content{
 width:100%;
 padding:20px 30px;
 box-sizing:border-box;
 }
+
 
 
 
