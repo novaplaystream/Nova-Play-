@@ -760,7 +760,7 @@ dubLanguageSelect.addEventListener("change", async () => {
   history.replaceState({ id: currentVideoId, lang: currentDubLanguage }, "", getWatchUrl(currentVideoId))
   await applyDubPreference()
 })
-
+<script>
 document.getElementById("likeBtn").onclick = async () => {
   try {
     await fetchJson(`/api/like/${currentVideoId}`, { method: "POST" })
@@ -786,6 +786,7 @@ document.getElementById("saveBtn").onclick = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videoId: currentVideoId })
     })
+    </script>
     showStatus("Saved to favorites")
   } catch (err) {
     showStatus(`Save failed: ${err.message}`)
@@ -1036,6 +1037,7 @@ alert("Link copied")
 document.getElementById("saveBtn")?.addEventListener("click",()=>{
 alert("Video saved to favorites ⭐")
 })
+
 
 
 
