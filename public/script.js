@@ -86,11 +86,7 @@ console.log("Live channel error",e)
 
 
 
-// ===== RUN =====
-
-loadHomepage()
-loadLiveChannels()
-
+// ===== AUTO SCROLL =====
 
 function autoScrollRows(){
 
@@ -116,7 +112,17 @@ row.scrollLeft=0
 
 }
 
+
+
+// ===== RUN =====
+
+loadHomepage()
+loadLiveChannels()
+
+setTimeout(()=>{
 autoScrollRows()
+},1000)
+
 
 
 
