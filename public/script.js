@@ -117,13 +117,14 @@ autoScrollRows()
 
 // ===== RUN =====
 
+document.addEventListener("DOMContentLoaded", () => {
+
 loadHomepage()
 loadLiveChannels()
 
-setTimeout(()=>{
-autoScrollRows()
-},1000)
+setupRowButtons()
 
+})
 
 document.querySelectorAll(".row-wrapper").forEach(wrapper=>{
 
@@ -147,6 +148,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 loadHomepage()
 loadLiveChannels()
 })
+
 
 
 
