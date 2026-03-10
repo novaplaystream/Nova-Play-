@@ -270,5 +270,98 @@ height:260px;
 }
 
 }
+/* HERO */
+
+.hero{
+height:420px;
+background:url("https://images.unsplash.com/photo-1489599849927-2ee91cede3ba") center/cover;
+border-radius:14px;
+display:flex;
+align-items:center;
+padding:40px;
+margin-bottom:30px;
+position:relative;
+}
+
+.hero-overlay{
+background:linear-gradient(90deg,rgba(0,0,0,.8),rgba(0,0,0,.2));
+padding:40px;
+border-radius:12px;
+}
+
+.hero h1{
+font-size:42px;
+margin-bottom:10px;
+}
+
+.hero-btn{
+background:#ff0033;
+padding:12px 20px;
+border-radius:8px;
+color:white;
+text-decoration:none;
+font-weight:600;
+display:inline-block;
+margin-top:10px;
+}
+
+/* ROWS */
+
+.row{
+margin-bottom:35px;
+}
+
+.row-scroll{
+display:flex;
+gap:16px;
+overflow-x:auto;
+padding-bottom:10px;
+}
+
+.row-scroll::-webkit-scrollbar{
+display:none;
+}
+
+/* CARDS */
+
+.card{
+background:#141a22;
+border-radius:12px;
+min-width:220px;
+transition:transform .3s;
+cursor:pointer;
+}
+
+.card img{
+width:100%;
+border-radius:12px;
+}
+
+.card h4{
+font-size:14px;
+padding:8px;
+}
+
+/* HOVER EFFECT */
+
+.card:hover{
+transform:scale(1.12);
+z-index:10;
+box-shadow:0 10px 30px rgba(0,0,0,.8);
+}
+
+/* BUTTON */
+
+.card a{
+display:block;
+padding:8px;
+background:#ff0033;
+text-align:center;
+border-radius:6px;
+color:white;
+text-decoration:none;
+margin:8px;
+font-size:13px;
+}
 
 
