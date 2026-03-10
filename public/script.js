@@ -13,13 +13,17 @@ const music = document.getElementById("musicRow")
 
 if(!Array.isArray(videos)) return
 
-videos.forEach(v=>{
+videos.forEach(v => {
 
 const card = `
 <div class="card">
-<img src="${v.thumbnailUrl || v.thumbnail || ''}" alt="${v.title}">
+
+<img src="${v.thumbnailUrl || v.thumbnail || ''}">
+
 <h4>${v.title}</h4>
+
 <a href="/watch.html?id=${v._id || v.id}">Watch</a>
+
 </div>
 `
 
@@ -113,6 +117,7 @@ row.scrollLeft=0
 }
 
 autoScrollRows()
+
 
 
 
