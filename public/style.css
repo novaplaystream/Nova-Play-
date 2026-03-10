@@ -306,15 +306,21 @@ margin-top:10px;
 }
 
 /* ROWS */
-
-/* ROW SECTION */
-
 .row{
 margin-bottom:40px;
 }
 
-.row h2{
-margin-bottom:12px;
+.row-scroll{
+display:flex;
+flex-wrap:nowrap;
+gap:16px;
+overflow-x:auto;
+padding-bottom:10px;
+width:100%;
+}
+
+.row-scroll::-webkit-scrollbar{
+display:none;
 }
 
 /* SCROLL ROW */
@@ -340,8 +346,8 @@ background:#141a22;
 border-radius:10px;
 width:180px;
 flex:0 0 auto;
-transition:transform .25s;
 cursor:pointer;
+transition:.25s;
 }
 
 .card img{
@@ -351,27 +357,10 @@ object-fit:cover;
 border-radius:10px;
 }
 
-.card h4{
-font-size:13px;
-padding:6px;
-margin:0;
-}
-
-.card a{
-display:block;
-background:#ff0033;
-color:white;
-text-align:center;
-padding:6px;
-margin:6px;
-border-radius:6px;
-text-decoration:none;
-}
-
 .card:hover{
 transform:scale(1.08);
-box-shadow:0 10px 25px rgba(0,0,0,.7);
 }
+
 
 
 /* BUTTON */
@@ -413,6 +402,7 @@ row.scrollLeft=0
 }
 
 autoScrollRows()
+
 
 
 
