@@ -135,18 +135,18 @@ transform:translateY(-1px);
 
 /* ===== VIDEO PLAYER ===== */
 
-.player-stage{
-background:black;
-}
-
-#livePlayer,
-#liveFrame{
+#player{
 width:100%;
-height:520px;
-border:0;
-display:none;
+max-width:1000px;
+margin:auto;
 }
 
+#player iframe,
+#player video{
+width:100%;
+height:560px;
+border-radius:10px;
+}
 
 /* ===== CHANNEL LIST PANEL ===== */
 
@@ -418,6 +418,7 @@ font-weight:600;
 .watch-btn:hover{
 background:#ff3355;
 }
+
 
 
 
