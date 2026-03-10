@@ -671,65 +671,6 @@ sideLinks.forEach(link => {
 
 loadVideos()
 renderMiniPlayer()
-const liveChannels = [
-{
-name:"News Live",
-logo:"https://img.icons8.com/color/96/news.png",
-url:"/watch.html?channel=news"
-},
-{
-name:"Sports Live",
-logo:"https://img.icons8.com/color/96/trophy.png",
-url:"/watch.html?channel=sports"
-},
-{
-name:"Music Live",
-logo:"https://img.icons8.com/color/96/musical-notes.png",
-url:"/watch.html?channel=music"
-},
-{
-name:"Movie Channel",
-logo:"https://img.icons8.com/color/96/movie.png",
-url:"/watch.html?channel=movies"
-}
-];
-
-const channelContainer = document.getElementById("channels");
-
-if(channelContainer){
-liveChannels.forEach(channel=>{
-channelContainer.innerHTML += `
-<div class="channel-card">
-<img src="${channel.logo}">
-<h3>${channel.name}</h3>
-<a href="${channel.url}">Watch</a>
-</div>
-`;
-});
-}
-
-async function loadTrendingVideos(){
-
-const container = document.getElementById("trendingVideos")
-
-if(!container) return
-
-const res = await fetch("/api/videos/trending")
-const videos = await res.json()
-
-videos.forEach(video=>{
-
-container.innerHTML += `
-<div class="video-card">
-<img src="${video.thumbnailUrl}">
-<h3>${video.title}</h3>
-<a href="/watch.html?id=${video.id}">Watch</a>
-</div>
-`
-
-})
-
-}
 
 loadTrendingVideos()
 
@@ -841,6 +782,7 @@ trending.innerHTML += card
 })
 
 }
+
 
 
 
