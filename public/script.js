@@ -22,7 +22,7 @@ const card = `
 
 <h4>${v.title}</h4>
 
-<a href="/watch.html?id=${v._id || v._id}">Watch</a>
+<a class="watch-btn" href="/watch.html?id=${v._id}">Watch</a>
 
 </div>
 `
@@ -157,6 +157,7 @@ behavior: "smooth"
 })
 
 }
+
 
 
 
