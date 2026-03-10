@@ -1062,10 +1062,8 @@ async function getVideos() {
 }
 
 async function saveVideos(videos) {
-  await Video.deleteMany({})
-  await Video.insertMany(videos)
+  await Video.insertMany(videos, { ordered: false })
 }
-
 async function getComments() {
   return readJson(COMMENTS_FILE, [])
 }
@@ -2985,6 +2983,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
