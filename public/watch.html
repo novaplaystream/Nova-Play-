@@ -64,6 +64,7 @@ overflow:auto;
 <div class="watchPage">
 <div class="videoSection">
 <div id="player"></div>
+</div>
 <audio id="dubAudio" style="display:none"></audio>
 <div id="upNextOverlay">
   <div class="overlayHeader">
@@ -294,17 +295,12 @@ function startDubAudio(url) {
 
 <script>
 
+<script>
+
 async function loadVideo(){
 
 const params = new URLSearchParams(window.location.search)
 const id = params.get("id")
-
-if(!id){
-document.getElementById("player").innerHTML="Video ID missing"
-return
-}
-
-try{
 
 const res = await fetch("/api/videos")
 const videos = await res.json()
@@ -316,16 +312,16 @@ document.getElementById("player").innerHTML="Video not found"
 return
 }
 
-renderPlayer(video)
-
-}catch(err){
-
-console.log(err)
-document.getElementById("player").innerHTML="Unable to load video"
+document.getElementById("player").innerHTML =
+`<iframe width="100%" height="520"
+src="https://www.youtube.com/embed/${video.videoId}"
+frameborder="0" allowfullscreen></iframe>`
 
 }
 
-}
+loadVideo()
+
+</script>
 
 function renderPlayer(video){
 
@@ -336,7 +332,7 @@ if(video.source === "youtube"){
 player.innerHTML = `
 <iframe
 width="100%"
-height="500"
+height="900"
 src="https://www.youtube.com/embed/${video.videoId}"
 frameborder="0"
 allowfullscreen>
@@ -351,7 +347,7 @@ player.innerHTML = `
 <iframe
 src="https://player.vimeo.com/video/${video.videoId}"
 width="100%"
-height="500"
+height="900"
 frameborder="0"
 allowfullscreen>
 </iframe>
@@ -383,8 +379,8 @@ async function renderYouTube(videoId) {
   const YT = await loadYouTubeApi()
 
   ytPlayer = new YT.Player("yt-player", {
-    width: "900",
-    height: "500",
+    width: "100%",
+    height: "900",
     videoId,
     playerVars: { autoplay: 1, rel: 0 },
     events: {
@@ -1040,6 +1036,7 @@ alert("Link copied")
 document.getElementById("saveBtn")?.addEventListener("click",()=>{
 alert("Video saved to favorites ⭐")
 })
+
 
 
 
