@@ -708,6 +708,30 @@ channelContainer.innerHTML += `
 });
 }
 
+async function loadTrendingVideos(){
+
+const container = document.getElementById("trendingVideos")
+
+if(!container) return
+
+const res = await fetch("/api/videos/trending")
+const videos = await res.json()
+
+videos.forEach(video=>{
+
+container.innerHTML += `
+<div class="video-card">
+<img src="${video.thumbnailUrl}">
+<h3>${video.title}</h3>
+<a href="/watch.html?id=${video.id}">Watch</a>
+</div>
+`
+
+})
+
+}
+
+loadTrendingVideos()
 
 
 
