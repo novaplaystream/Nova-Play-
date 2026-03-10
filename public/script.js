@@ -126,7 +126,9 @@ setupRowButtons()
 
 })
 
-document.querySelectorAll(".row-wrapper").forEach(wrapper=>{
+function setupRowButtons(){
+
+document.querySelectorAll(".row-wrapper").forEach(wrapper => {
 
 const row = wrapper.querySelector(".row-scroll")
 const next = wrapper.querySelector(".next")
@@ -134,20 +136,28 @@ const prev = wrapper.querySelector(".prev")
 
 if(!row) return
 
-next.addEventListener("click",()=>{
-row.scrollBy({left:400,behavior:"smooth"})
+next.addEventListener("click", () => {
+
+row.scrollBy({
+left: 350,
+behavior: "smooth"
 })
 
-prev.addEventListener("click",()=>{
-row.scrollBy({left:-400,behavior:"smooth"})
+})
+
+prev.addEventListener("click", () => {
+
+row.scrollBy({
+left: -350,
+behavior: "smooth"
 })
 
 })
 
-document.addEventListener("DOMContentLoaded",()=>{
-loadHomepage()
-loadLiveChannels()
 })
+
+}
+
 
 
 
