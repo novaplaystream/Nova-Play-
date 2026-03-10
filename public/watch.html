@@ -328,40 +328,7 @@ function renderNativeVideo(src) {
   playerContainer.appendChild(video)
 }
 
-async function renderPlayer(video) {
-  destroyPlayerState()
-  hideOverlay()
 
-  const source = String(video.source || "local").toLowerCase()
-
-  if (((source === "youtube" || source === "local") && isYouTubeStyleId(video.videoId)) || ((source === "watchmode" || source === "omdb" || source === "trakt") && isYouTubeStyleId(video.videoId))) {
-    await renderYouTube(video.videoId)
-    return
-  }
-
-  if (source === "vimeo" && video.videoId) {
-    renderIframe(`https://player.vimeo.com/video/${video.videoId}?autoplay=1`)
-    return
-  }
-
-  if (source === "dailymotion" && video.videoId) {
-    renderIframe(`https://www.dailymotion.com/embed/video/${video.videoId}?autoplay=1`)
-    return
-  }
-
-  if ((source === "watchmode" || source === "omdb" || source === "trakt") && String(video.title || "").trim()) {
-    const q = encodeURIComponent(`${String(video.title || "").trim()} trailer`)
-    renderIframe(`https://www.youtube.com/embed?autoplay=1&listType=search&list=${q}`)
-    return
-  }
-
-  if (video.playbackUrl) {
-    renderNativeVideo(video.playbackUrl)
-    return
-  }
-
-  playerContainer.textContent = "Playback URL not available for this source"
-}
 
 function createRecommendedCard(video) {
   const wrapper = document.createElement("div")
@@ -946,6 +913,7 @@ alert("Video saved to favorites ⭐")
 <script src="/script.js"></script>
 </body>
 </html>
+
 
 
 
