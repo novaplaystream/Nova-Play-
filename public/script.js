@@ -800,6 +800,49 @@ container.innerHTML += `
 
 loadLiveChannels()
 
+async function loadHomepage(){
+
+const res = await fetch("/api/videos")
+
+const videos = await res.json()
+
+const trending = document.getElementById("trendingVideos")
+const movies = document.getElementById("moviesRow")
+const music = document.getElementById("musicRow")
+
+if(!videos) return
+
+videos.forEach(v=>{
+
+const card = `
+<div class="card">
+
+<img src="${v.thumbnailUrl || v.thumbnail || ''}">
+
+<h4>${v.title}</h4>
+
+<a href="/watch.html?id=${v.id}">Watch</a>
+
+</div>
+`
+
+if(v.category==="movies" && movies){
+movies.innerHTML += card
+}
+
+if(v.category==="music" && music){
+music.innerHTML += card
+}
+
+if(trending && trending.children.length < 10){
+trending.innerHTML += card
+}
+
+})
+
+}
+
+loadHomepage()
 
 
 
