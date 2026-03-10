@@ -943,6 +943,87 @@ initWatchPage()
 </body>
 </html>
 
+<script>
+
+async function loadVideo(){
+
+const params = new URLSearchParams(window.location.search)
+const id = params.get("id")
+
+if(!id){
+document.getElementById("player").innerHTML="Video ID missing"
+return
+}
+
+try{
+
+const res = await fetch("/api/videos")
+const videos = await res.json()
+
+const video = videos.find(v => (v._id || v.id) == id)
+
+if(!video){
+document.getElementById("player").innerHTML="Video not found"
+return
+}
+
+renderPlayer(video)
+
+}catch(err){
+
+document.getElementById("player").innerHTML="Unable to load video"
+
+}
+
+}
+
+function renderPlayer(video){
+
+const player = document.getElementById("player")
+
+if(video.source === "youtube"){
+
+player.innerHTML = `
+<iframe
+width="100%"
+height="500"
+src="https://www.youtube.com/embed/${video.videoId}"
+frameborder="0"
+allowfullscreen>
+</iframe>
+`
+
+}
+
+else if(video.source === "vimeo"){
+
+player.innerHTML = `
+<iframe
+src="https://player.vimeo.com/video/${video.videoId}"
+width="100%"
+height="500"
+frameborder="0"
+allowfullscreen>
+</iframe>
+`
+
+}
+
+else{
+
+player.innerHTML = `
+<video controls autoplay width="100%">
+<source src="${video.playbackUrl}">
+</video>
+`
+
+}
+
+}
+
+loadVideo()
+
+</script>
 
 
 
