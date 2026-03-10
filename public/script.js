@@ -22,7 +22,7 @@ const card = `
 
 <h4>${v.title}</h4>
 
-<a href="/watch.html?id=${v._id || v.id}">Watch</a>
+<a href="/watch.html?id=${v._id || v._id}">Watch</a>
 
 </div>
 `
@@ -142,6 +142,7 @@ row.scrollBy({left:-400,behavior:"smooth"})
 })
 
 })
+
 
 
 
