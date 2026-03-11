@@ -90,22 +90,32 @@ async function fetchJson(url){
 }
 
 async function init(){
-  let id = String(videoIdParam || "").trim()
-  if (id && !/^\d+$/.test(id)) {
-    try {
-      const list = await fetchJson("/api/videos")
-      const match = Array.isArray(list) ? list.find(v => String(v._id) === id) : null
-      if (match && match.id) {
-        id = String(match.id)
-      }
-    } catch {}
+  const rawId = String(videoIdParam || "").trim()
+  let video = null
+
+  try {
+    const list = await fetchJson("/api/videos")
+    if (Array.isArray(list)) {
+      video = list.find(v => String(v.id) === rawId || String(v._id) === rawId) || null
+    }
+  } catch {
+    // ignore, fallback below
   }
-  if (!id) {
+
+  if (!video && rawId) {
+    try {
+      const direct = await fetchJson(/api/video/)
+      if (direct) video = direct
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!video) {
     try {
       const list = await fetchJson("/api/videos/trending")
-      const first = Array.isArray(list) ? list.find(v => v._id || v.id) : null
-      if (first) {
-        id = String(first._id || first.id)
+      if (Array.isArray(list)) {
+        video = list.find(v => v.id || v._id) || null
       }
     } catch {
       showStatus("Open this page from the server or provide ?id=VIDEO_ID")
@@ -113,42 +123,43 @@ async function init(){
     }
   }
 
-  try {
-    const video = await fetchJson(`/api/video/${id}`)
-    const source = String(video.source || "local").toLowerCase()
-    const vid = String(video.videoId || "")
-
-    if (isYouTubeStyleId(vid)) {
-      renderIframe(`https://www.youtube.com/embed/${vid}?autoplay=1`)
-      hideStatus()
-      return
-    }
-    if (source === "vimeo" && vid) {
-      renderIframe(`https://player.vimeo.com/video/${vid}`)
-      hideStatus()
-      return
-    }
-    if (source === "dailymotion" && vid) {
-      renderIframe(`https://www.dailymotion.com/embed/video/${vid}`)
-      hideStatus()
-      return
-    }
-    if (video.playbackUrl) {
-      renderNative(video.playbackUrl)
-      hideStatus()
-      return
-    }
-
-    showStatus("Unable to play video")
-  } catch (err) {
-    showStatus(`Load failed: ${err.message}`)
+  if (!video) {
+    showStatus("Video not found")
+    return
   }
+
+  const source = String(video.source || "local").toLowerCase()
+  const vid = String(video.videoId || "")
+
+  if (isYouTubeStyleId(vid)) {
+    renderIframe(https://www.youtube.com/embed/?autoplay=1)
+    hideStatus()
+    return
+  }
+  if (source === "vimeo" && vid) {
+    renderIframe(https://player.vimeo.com/video/)
+    hideStatus()
+    return
+  }
+  if (source === "dailymotion" && vid) {
+    renderIframe(https://www.dailymotion.com/embed/video/)
+    hideStatus()
+    return
+  }
+  if (video.playbackUrl) {
+    renderNative(video.playbackUrl)
+    hideStatus()
+    return
+  }
+
+  showStatus("Unable to play video")
 }
 
 init()
 </script>
 </body>
 </html>
+
 
 
 
