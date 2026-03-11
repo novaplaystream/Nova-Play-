@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 // ===== NOVAPLAY HOMEPAGE LOADER =====
 
 async function loadHomepage(){
@@ -176,6 +176,5 @@ behavior: "smooth"
 
 
 
-=======
 
 
