@@ -2269,7 +2269,7 @@ function createApp() {
     cleanupExpiredUserSessions()
 
     if (!googleClientId || !googleClientSecret) {
-      return next(createHttpError(500, "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not configured"))
+      return res.status(500).json({ error: "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not configured" })
     }
 
     const ageConfirmed = String(req.query.age || "") === "1"
@@ -2311,7 +2311,7 @@ function createApp() {
     }
 
     if (!googleClientId || !googleClientSecret) {
-      throw createHttpError(500, "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not configured")
+      return res.status(500).json({ error: "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not configured" })
     }
 
     const redirectUri = getGoogleRedirectUrl(req)
@@ -3214,6 +3214,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
