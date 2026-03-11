@@ -477,7 +477,7 @@ function parseAttributesFromExtInf(line) {
 }
 
 function parseM3uChannels(text, limit = 220) {
-const lines = String(text || '').split(/\r?\n/);
+  const lines = String(text || "").split(/\r?\n/)
   const channels = []
   let pending = null
 
@@ -3214,6 +3214,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
