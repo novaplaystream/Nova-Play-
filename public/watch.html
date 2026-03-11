@@ -5,31 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NovaPlay Player</title>
 <style>
-html, body { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; }
-#player { width:100vw; height:100vh; background:#000; display:flex; align-items:center; justify-content:center; }
+:root { --bg: #000; --fg: #fff; --muted: rgba(255,255,255,0.7); }
+html, body { margin:0; padding:0; width:100%; height:100%; background:var(--bg); color:var(--fg); overflow:hidden; font-family:Arial, sans-serif; }
+#app { position:fixed; inset:0; background:#000; }
+#player { position:fixed; inset:0; background:#000; display:flex; align-items:center; justify-content:center; }
 iframe, video { width:100vw; height:100vh; border:0; display:block; background:#000; }
-#hint { position:fixed; inset:auto 12px 12px auto; color:#fff; font:14px/1.3 Arial, sans-serif; background:rgba(0,0,0,0.6); padding:8px 10px; border-radius:6px; display:none; }
-#status { position:fixed; inset:12px auto auto 12px; color:#fff; font:14px/1.3 Arial, sans-serif; background:rgba(0,0,0,0.6); padding:8px 10px; border-radius:6px; }
+#topbar { position:fixed; top:0; left:0; right:0; height:56px; display:flex; align-items:center; padding:0 16px; background:linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0)); pointer-events:none; z-index:5; }
+#logo { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.5px; }
+#logo img { height:28px; width:auto; }
+#title { margin-left:14px; font-size:14px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60vw; }
+#status { position:fixed; top:64px; left:16px; background:rgba(0,0,0,0.6); padding:8px 10px; border-radius:6px; font-size:13px; z-index:6; }
+#hint { position:fixed; right:16px; bottom:16px; background:rgba(0,0,0,0.6); padding:8px 10px; border-radius:6px; font-size:13px; z-index:6; display:none; }
 </style>
 </head>
 <body>
-<div id="player"></div>
-<div id="status">Loading...</div>
-<div id="hint">Tap to enter fullscreen</div>
+<div id="app">
+  <div id="player"></div>
+  <div id="topbar">
+    <div id="logo">
+      <img src="/assets/novaplay-logo.svg" alt="NovaPlay">
+      <span>NovaPlay</span>
+      <span id="title"></span>
+    </div>
+  </div>
+  <div id="status">Loading...</div>
+  <div id="hint">Tap to enter fullscreen</div>
+</div>
 
 <script>
 const params = new URLSearchParams(location.search)
-const videoIdParam = params.get("id")
+const rawId = String(params.get("id") || "").trim()
 const autoFullscreen = params.get("fs") === "1"
 const playerEl = document.getElementById("player")
 const statusEl = document.getElementById("status")
 const hintEl = document.getElementById("hint")
-let nativeVideoEl = null
+const titleEl = document.getElementById("title")
 
 function showStatus(msg){ statusEl.textContent = msg || "" }
 function hideStatus(){ statusEl.textContent = "" }
+function setTitle(text){ titleEl.textContent = text ? `- ${text}` : "" }
 
 function isYouTubeStyleId(value){ return /^[A-Za-z0-9_-]{11}$/.test(String(value || "")) }
+
+async function fetchJson(url, timeoutMs = 8000){
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  const res = await fetch(url, { signal: controller.signal })
+  clearTimeout(timeout)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || "Request failed")
+  return data
+}
 
 function requestFullscreen(target){
   if (!target) return false
@@ -77,72 +103,51 @@ function renderNative(src){
   video.autoplay = true
   video.playsInline = true
   video.src = src
-  nativeVideoEl = video
   playerEl.appendChild(video)
   enterFullscreen(video)
 }
 
-async function fetchJson(url, timeoutMs = 8000){
-  const controller = new AbortController()\n  const timeout = setTimeout(() => controller.abort(), timeoutMs)\n  const res = await fetch(url, { signal: controller.signal })\n  clearTimeout(timeout)
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || "Request failed")
-  return data
+async function resolveVideo(){
+  try {
+    const list = await fetchJson("/api/videos")
+    if (Array.isArray(list)) {
+      if (rawId) {
+        const match = list.find(v => String(v.id) === rawId || String(v._id) === rawId)
+        if (match) return match
+      }
+      const first = list.find(v => v.id || v._id)
+      if (first) return first
+    }
+  } catch (err) {
+    showStatus(`API error: ${err.message}`)
+  }
+  return null
 }
 
-async function init(){\n  showStatus("Loading...")
-  const rawId = String(videoIdParam || "").trim()
-  let video = null
-
-  try {
-    const list = await fetchJson("/api/videos", 8000)
-    if (Array.isArray(list)) {
-      video = list.find(v => String(v.id) === rawId || String(v._id) === rawId) || null
-    }
-  } catch {
-    // ignore, fallback below
-  }
-
-  if (!video && rawId) {
-    try {
-      const direct = await fetchJson(/api/video/)
-      if (direct) video = direct
-    } catch {
-      // ignore
-    }
-  }
-
+async function init(){
+  showStatus("Loading...")
+  const video = await resolveVideo()
   if (!video) {
-    try {
-      const list = await fetchJson("/api/videos/trending", 8000)
-      if (Array.isArray(list)) {
-        video = list.find(v => v.id || v._id) || null
-      }
-    } catch {
-      showStatus("API error. Open from server or provide valid ?id. Check /api/videos")
-      return
-    }
-  }
-
-  if (!video) {
-    showStatus("Video not found")
+    showStatus(rawId ? `Video not found for id: ${rawId}` : "No videos available")
     return
   }
 
+  setTitle(video.title || "")
   const source = String(video.source || "local").toLowerCase()
   const vid = String(video.videoId || "")
 
   if (isYouTubeStyleId(vid)) {
-    renderIframe(https://www.youtube.com/embed/?autoplay=1)
+    renderIframe(`https://www.youtube.com/embed/${vid}?autoplay=1`)
     hideStatus()
     return
   }
   if (source === "vimeo" && vid) {
-    renderIframe(https://player.vimeo.com/video/)
+    renderIframe(`https://player.vimeo.com/video/${vid}`)
     hideStatus()
     return
   }
   if (source === "dailymotion" && vid) {
-    renderIframe(https://www.dailymotion.com/embed/video/)
+    renderIframe(`https://www.dailymotion.com/embed/video/${vid}`)
     hideStatus()
     return
   }
@@ -159,8 +164,3 @@ init()
 </script>
 </body>
 </html>
-
-
-
-
-
