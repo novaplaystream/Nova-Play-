@@ -172,6 +172,11 @@ async function adminFetch(url, options = {}) {
 
   const response = await fetch(url, Object.assign({}, options, { headers }))
   const payload = await response.json().catch(() => ({}))
+  if (response.status === 401) {
+    clearToken()
+    setLoggedInUI(false)
+    throw new Error("Admin session expired. Please login again.")
+  }
   if (!response.ok) throw new Error(payload.error || "Request failed")
   return payload
 }
@@ -662,6 +667,8 @@ verifySession()
 </body>
 
 </html>
+
+
 
 
 
