@@ -25,7 +25,7 @@
 
   <main class="content">
     <div class="search-hero">
-      <input id="mainSearch" placeholder="Search channels like JioTV style...">
+      <input id="mainSearch" placeholder="Search channels">
       <button id="mainSearchBtn" type="button">Find & Play</button>
     </div>
 
@@ -46,7 +46,7 @@
         </div>
       </div>
       <div id="playerStage" class="player-stage">
-        <video id="livePlayer" controls controlsList="nofullscreen" autoplay playsinline></video>
+        <video id="livePlayer" controls autoplay playsinline></video>
         <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         <button id="fsPrevBtn" class="fs-nav fs-prev" type="button">Prev</button>
         <button id="fsNextBtn" class="fs-nav fs-next" type="button">Next</button>
@@ -413,7 +413,8 @@ async function tryAutoSkip(currentChannel, reason, attemptedKeys = new Set(), pl
 
 async function togglePlayerFullscreen() {
   try {
-    const isFs = document.fullscreenElement === playerStage || document.webkitFullscreenElement === playerStage
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement
+    const isFs = fsEl === playerStage || fsEl === videoEl || fsEl === frameEl
     if (isFs) {
       if (document.exitFullscreen) {
         await document.exitFullscreen()
@@ -422,19 +423,22 @@ async function togglePlayerFullscreen() {
       }
       return
     }
-    if (playerStage.requestFullscreen) {
-      await playerStage.requestFullscreen()
-    } else if (playerStage.webkitRequestFullscreen) {
-      playerStage.webkitRequestFullscreen()
+    const target = videoEl && videoEl.style.display !== "none"
+      ? videoEl
+      : (frameEl && frameEl.style.display !== "none" ? frameEl : playerStage)
+    if (target.requestFullscreen) {
+      await target.requestFullscreen()
+    } else if (target.webkitRequestFullscreen) {
+      target.webkitRequestFullscreen()
     }
   } catch {}
 }
 
 function syncFullscreenButtonState() {
-  const isFs = document.fullscreenElement === playerStage || document.webkitFullscreenElement === playerStage
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement
+  const isFs = fsEl === playerStage || fsEl === videoEl || fsEl === frameEl
   toggleFullscreenBtn.textContent = isFs ? "Exit Full Screen" : "Full Screen"
 }
-
 function syncAutoSkipButtonState() {
   toggleAutoSkipBtn.textContent = autoSkipEnabled ? "Auto Skip: ON" : "Auto Skip: OFF"
 }
@@ -736,6 +740,9 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
+
 
 
 
