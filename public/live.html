@@ -339,12 +339,6 @@ function updateAudioTracksFromNative() {
     }
     audioLangInitialized = true
   }
-}videoEl.pause()
-  videoEl.removeAttribute("src")
-  videoEl.load()
-  frameEl.src = ""
-  videoEl.style.display = "none"
-  frameEl.style.display = "none"
 }
 
 function getChannelKey(channel) {
@@ -854,6 +848,8 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
 
 
 

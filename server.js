@@ -2991,7 +2991,7 @@ function createApp() {
       const status = typeof req.query.status === "string" ? req.query.status : "all"
       const videos = await getVideos()
 
-      let filtered = videos.filter(isPlayableVideo)
+      let filtered = videos
       if (status === "pending") {
         filtered = videos.filter(v => getVideoStatus(v) === "pending")
       } else if (status === "approved") {
@@ -3217,6 +3217,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
