@@ -631,7 +631,7 @@ async function fetchRemoteLiveChannels(limit = LIVE_TV_REMOTE_DEFAULT_LIMIT) {
 }
 
 async function getLiveTvChannels() {
-  const includeRemote = String(process.env.LIVE_TV_REMOTE_ENABLED || "false").toLowerCase() === "true"
+  const includeRemote = String(process.env.LIVE_TV_REMOTE_ENABLED || "true").toLowerCase() === "true"
   const local = [...LIVE_TV_CHANNELS]
 
   if (!includeRemote) {
@@ -3217,6 +3217,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
