@@ -91,6 +91,15 @@ async function fetchJson(url){
 
 async function init(){
   let id = String(videoIdParam || "").trim()
+  if (id && !/^\d+$/.test(id)) {
+    try {
+      const list = await fetchJson("/api/videos")
+      const match = Array.isArray(list) ? list.find(v => String(v._id) === id) : null
+      if (match && match.id) {
+        id = String(match.id)
+      }
+    } catch {}
+  }
   if (!id) {
     try {
       const list = await fetchJson("/api/videos/trending")
@@ -140,5 +149,6 @@ init()
 </script>
 </body>
 </html>
+
 
 
