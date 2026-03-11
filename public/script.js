@@ -1,3 +1,16 @@
+async function revealAdminLink() {
+  const adminLink = document.getElementById("adminLink")
+  if (!adminLink) return
+  try {
+    const res = await fetch("/api/me")
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data && data.isAdmin) {
+      adminLink.classList.remove("hidden")
+    }
+  } catch {
+    // ignore
+  }
+}
 
 // ===== NOVAPLAY HOMEPAGE LOADER =====
 
@@ -121,6 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
 loadHomepage()
 loadLiveChannels()
 
+revealAdminLink()
+
 setupRowButtons()
 
 })
@@ -156,6 +171,8 @@ behavior: "smooth"
 })
 
 }
+
+
 
 
 

@@ -52,7 +52,11 @@ const TRAKT_SEARCH_URL = "https://api.trakt.tv/search/movie,show"
 const writeQueues = new Map()
 const adminSessions = new Map()
 const loginAttempts = new Map()
+const userSessions = new Map()
+const oauthStates = new Map()
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000
+const USER_SESSION_TTL_MS = 24 * 60 * 60 * 1000
 
 const SUPPORTED_LANGUAGES = [
   "en", "hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "pa", "ur",
@@ -473,7 +477,8 @@ function parseAttributesFromExtInf(line) {
 }
 
 function parseM3uChannels(text, limit = 220) {
-  const lines = String(text || "").split(/\r?\n/)
+  const lines = String(text || "").split(/\r?
+/)
   const channels = []
   let pending = null
 
@@ -678,6 +683,81 @@ function cleanupExpiredSessions() {
   }
 }
 
+function cleanupExpiredUserSessions() {
+  const now = Date.now()
+  for (const [token, session] of userSessions.entries()) {
+    if (session.expiresAt <= now) {
+      userSessions.delete(token)
+    }
+  }
+  for (const [state, meta] of oauthStates.entries()) {
+    if (meta.expiresAt <= now) {
+      oauthStates.delete(state)
+    }
+  }
+}
+
+function parseCookies(req) {
+  const header = String(req.headers.cookie || "")
+  if (!header) return {}
+  const out = {}
+  header.split(";").forEach(part => {
+    const [name, ...rest] = part.split("=")
+    if (!name) return
+    const key = name.trim()
+    if (!key) return
+    out[key] = decodeURIComponent(rest.join("=").trim())
+  })
+  return out
+}
+
+function getUserSession(req) {
+  const cookies = parseCookies(req)
+  const token = String(cookies.novaplay_user || "").trim()
+  if (!token) return null
+  const session = userSessions.get(token)
+  if (!session || session.expiresAt <= Date.now()) {
+    userSessions.delete(token)
+    return null
+  }
+  return session
+}
+
+function issueUserSession(res, email, secure = false) {
+  const token = crypto.randomBytes(24).toString("hex")
+  const now = Date.now()
+  userSessions.set(token, {
+    email: String(email || ""),
+    createdAt: now,
+    expiresAt: now + USER_SESSION_TTL_MS
+  })
+  const parts = [
+    `novaplay_user=${encodeURIComponent(token)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${Math.floor(USER_SESSION_TTL_MS / 1000)}`
+  ]
+  if (secure) parts.push("Secure")
+  res.setHeader("Set-Cookie", parts.join("; "))
+  return token
+}
+
+function clearUserSession(res) {
+  res.setHeader("Set-Cookie", "novaplay_user=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")
+}
+
+function isPublicPath(pathname) {
+  if (pathname === "/login.html") return true
+  if (pathname === "/auth/google") return true
+  if (pathname === "/auth/google/callback") return true
+  if (pathname === "/logout") return true
+  if (pathname === "/style.css") return true
+  if (pathname === "/favicon.ico") return true
+  if (pathname.startsWith("/assets/")) return true
+  if (pathname === "/google8e310517aefcb45c.html") return true
+  return false
+}
 function deriveCategory(title) {
   const text = String(title || "").toLowerCase()
 
@@ -2158,7 +2238,6 @@ function createApp() {
   const app = express()
 
   app.use(express.json({ limit: "150kb" }))
-
   const studioAccessKey = String(process.env.STUDIO_ACCESS_KEY || "")
   app.use((req, res, next) => {
     if (req.path !== "/studio.html") return next()
@@ -2173,6 +2252,138 @@ function createApp() {
     }
 
     return next()
+  })
+
+  const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim()
+  const googleClientSecret = String(process.env.GOOGLE_CLIENT_SECRET || "").trim()
+  const googleRedirectEnv = String(process.env.GOOGLE_REDIRECT_URL || "").trim()
+  const adminEmail = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase()
+
+  function getGoogleRedirectUrl(req) {
+    if (googleRedirectEnv) return googleRedirectEnv
+    const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "http")
+    const host = req.get("host")
+    return `${proto}://${host}/auth/google/callback`
+  }
+
+  app.get("/auth/google", (req, res, next) => {
+    cleanupExpiredUserSessions()
+
+    if (!googleClientId || !googleClientSecret) {
+      return next(createHttpError(500, "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not configured"))
+    }
+
+    const ageConfirmed = String(req.query.age || "") === "1"
+    if (!ageConfirmed) {
+      return next(createHttpError(400, "Age confirmation required"))
+    }
+
+    const state = crypto.randomBytes(18).toString("hex")
+    oauthStates.set(state, {
+      expiresAt: Date.now() + OAUTH_STATE_TTL_MS,
+      ageConfirmed: true
+    })
+
+    const redirectUri = getGoogleRedirectUrl(req)
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth")
+    authUrl.searchParams.set("client_id", googleClientId)
+    authUrl.searchParams.set("redirect_uri", redirectUri)
+    authUrl.searchParams.set("response_type", "code")
+    authUrl.searchParams.set("scope", "openid email profile")
+    authUrl.searchParams.set("state", state)
+    authUrl.searchParams.set("prompt", "select_account")
+
+    res.redirect(authUrl.toString())
+  })
+
+  app.get("/auth/google/callback", asyncHandler(async (req, res) => {
+    cleanupExpiredUserSessions()
+
+    const code = String(req.query.code || "")
+    const state = String(req.query.state || "")
+    if (!code || !state) {
+      throw createHttpError(400, "Invalid login response")
+    }
+
+    const stateMeta = oauthStates.get(state)
+    oauthStates.delete(state)
+    if (!stateMeta || !stateMeta.ageConfirmed || stateMeta.expiresAt <= Date.now()) {
+      throw createHttpError(400, "Login expired. Please try again.")
+    }
+
+    if (!googleClientId || !googleClientSecret) {
+      throw createHttpError(500, "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not configured")
+    }
+
+    const redirectUri = getGoogleRedirectUrl(req)
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: googleClientId,
+        client_secret: googleClientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code"
+      })
+    })
+
+    const tokenPayload = await tokenResponse.json().catch(() => ({}))
+    if (!tokenResponse.ok) {
+      throw createHttpError(401, tokenPayload.error_description || "Google login failed")
+    }
+
+    const accessToken = String(tokenPayload.access_token || "")
+    if (!accessToken) {
+      throw createHttpError(401, "Google login failed")
+    }
+
+    const userResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    })
+    const userPayload = await userResponse.json().catch(() => ({}))
+    if (!userResponse.ok) {
+      throw createHttpError(401, "Unable to fetch Google profile")
+    }
+
+    const email = String(userPayload.email || "")
+    const emailVerified = userPayload.email_verified === true
+    if (!email || !emailVerified || !email.toLowerCase().endsWith("@gmail.com")) {
+      throw createHttpError(403, "Gmail account required")
+    }
+
+    const secureCookie = req.secure || String(req.headers["x-forwarded-proto"] || "").toLowerCase() === "https"
+    issueUserSession(res, email, secureCookie)
+    res.redirect("/")
+  }))
+
+  app.get("/logout", (req, res) => {
+    clearUserSession(res)
+    res.redirect("/login.html")
+  })
+
+  app.use((req, res, next) => {
+    cleanupExpiredUserSessions()
+    if (isPublicPath(req.path)) return next()
+
+    const session = getUserSession(req)
+    if (!session) {
+      if (req.path.startsWith("/api/")) {
+        return res.status(401).json({ error: "Login required" })
+      }
+      return res.redirect("/login.html")
+    }
+
+    if (req.path === "/admin.html" && adminEmail && session.email.toLowerCase() !== adminEmail) {
+      return res.status(404).send("Not Found")
+    }
+
+    req.user = session
+    return next()
+  })
+
+  app.get("/api/me", (req, res) => {
+    res.json({ email: req.user?.email || "", isAdmin: adminEmail ? req.user?.email?.toLowerCase() === adminEmail : false })
   })
 
   app.use(express.static("public"))
@@ -3004,6 +3215,15 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
+
+
+
+
+
+
+
+
 
 
 

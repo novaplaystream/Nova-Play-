@@ -7,6 +7,9 @@ background:#070d1a;
 color:#eaf2ff;
 }
 
+.hidden{
+display:none !important;
+}
 
 /* ===== TOP BAR ===== */
 
@@ -136,6 +139,7 @@ transform:translateY(-1px);
 /* ===== VIDEO PLAYER ===== */
 
 #playerStage{
+position:relative;
 width:100%;
 height:clamp(480px, 75vh, 900px);
 background:#000;
@@ -155,6 +159,105 @@ display:block;
 background:#000;
 }
 
+.fs-nav{
+position:absolute;
+top:50%;
+transform:translateY(-50%);
+width:44px;
+height:44px;
+border-radius:50%;
+background:rgba(0,0,0,.7);
+border:1px solid rgba(255,255,255,.25);
+color:white;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+letter-spacing:.2px;
+transition:.2s;
+}
+.fs-nav:hover{
+background:#ff0033;
+border-color:#ff0033;
+}
+.fs-prev{
+left:12px;
+}
+.fs-next{
+right:12px;
+}
+
+.player-lang{
+position:absolute;
+top:12px;
+right:12px;
+display:none;
+align-items:center;
+gap:8px;
+padding:6px 10px;
+background:rgba(12,21,43,.8);
+border:1px solid rgba(255,255,255,.2);
+border-radius:8px;
+backdrop-filter:blur(6px);
+z-index:3;
+}
+.player-lang label{
+font-size:11px;
+opacity:.8;
+}
+.player-lang select{
+background:#132040;
+color:#fff;
+border:1px solid rgba(83,168,255,.4);
+border-radius:6px;
+padding:4px 6px;
+font-size:12px;
+}
+
+.panel-status{
+margin:8px 0 10px;
+padding:10px;
+background:#101a33;
+border-radius:8px;
+border:1px solid rgba(255,255,255,.06);
+}
+#nowPlaying{
+font-weight:700;
+font-size:13px;
+}
+#nowPlayingMeta{
+font-size:11px;
+opacity:.7;
+}
+.panel-controls{
+display:flex;
+flex-direction:column;
+gap:8px;
+margin-bottom:10px;
+}
+.panel-controls button,
+.panel-controls .skip-delay-chip{
+background:#132040;
+border:1px solid rgba(83,168,255,.4);
+color:white;
+padding:8px 10px;
+border-radius:8px;
+font-size:12px;
+cursor:pointer;
+transition:.2s;
+}
+.panel-controls button:hover,
+.panel-controls .skip-delay-chip:hover{
+background:#1e2f5c;
+border-color:#53a8ff;
+transform:translateY(-1px);
+}
+.skip-delay{
+display:flex;
+gap:6px;
+flex-wrap:wrap;
+}
 #player{
 width:100%;
 max-width:1100px;
@@ -285,6 +388,7 @@ height:auto;
 }
 
 #playerStage{
+position:relative;
 height:clamp(300px, 60vh, 520px);
 }
 
@@ -456,6 +560,11 @@ font-weight:600;
 .watch-btn:hover{
 background:#ff3355;
 }
+
+
+
+
+
 
 
 

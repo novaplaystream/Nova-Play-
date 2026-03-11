@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NovaPlay Login</title>
+<link rel="icon" type="image/svg+xml" href="/assets/novaplay-mark.svg">
+<link rel="shortcut icon" href="/assets/novaplay-mark.svg">
+<link rel="stylesheet" href="/style.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body class="admin-body">
+<main class="admin-main" style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
+  <section class="admin-login-card" style="max-width:460px;width:100%;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <img src="/assets/novaplay-mark.svg" alt="NovaPlay" style="width:40px;height:40px;">
+      <h2 style="margin:0;">Login Required</h2>
+    </div>
+    <p>NovaPlay dekhne ke liye Google (Gmail) login zaroori hai. 18+ users only.</p>
+
+    <label style="display:flex;align-items:center;gap:10px;margin:16px 0;cursor:pointer;">
+      <input id="ageConfirm" type="checkbox" style="transform:scale(1.1);">
+      <span>I am 18+ years old</span>
+    </label>
+
+    <button id="googleLoginBtn" class="admin-btn" style="width:100%;">Continue with Google</button>
+    <div id="loginError" class="muted" style="margin-top:12px;color:#ff8a80;"></div>
+  </section>
+</main>
+
+<script>
+const ageConfirm = document.getElementById("ageConfirm")
+const loginBtn = document.getElementById("googleLoginBtn")
+const loginError = document.getElementById("loginError")
+
+loginBtn.addEventListener("click", () => {
+  loginError.textContent = ""
+  if (!ageConfirm.checked) {
+    loginError.textContent = "Please confirm you are 18+ to continue."
+    return
+  }
+  window.location.href = "/auth/google?age=1"
+})
+</script>
+</body>
+</html>

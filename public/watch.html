@@ -206,6 +206,7 @@ async function renderYouTube(videoId){
       onStateChange: async (event) => {
         if (event.data === YT.PlayerState.ENDED) {
           const list = await loadRecommendations()
+          playerEl.innerHTML = ""
           showOverlay(list)
         }
       }
@@ -270,3 +271,4 @@ init()
 </script>
 </body>
 </html>
+

@@ -24,30 +24,14 @@
 <div class="live-layout">
 
   <main class="content">
-    <div class="search-hero">
-      <input id="mainSearch" placeholder="Search channels">
-      <button id="mainSearchBtn" type="button">Find & Play</button>
-    </div>
-
     <section class="player-card">
-      <div class="player-head">
-        <div>
-          <div id="nowPlaying">Now Playing: none</div>
-          <div id="nowPlayingMeta">Choose a channel from right panel</div>
-        </div>
-        <div class="player-actions">
-          <button id="prevChannelBtn" type="button">Prev</button>
-          <button id="nextChannelBtn" type="button">Next</button>
-          <button id="toggleFullscreenBtn" type="button">Full Screen</button>
-          <button id="toggleAutoSkipBtn" type="button">Auto Skip: ON</button>
-          <button class="skip-delay-chip" data-skip-delay="15000" type="button">15s</button>
-          <button class="skip-delay-chip" data-skip-delay="20000" type="button">20s</button>
-          <button class="skip-delay-chip" data-skip-delay="25000" type="button">25s</button>
-        </div>
-      </div>
       <div id="playerStage" class="player-stage">
         <video id="livePlayer" controls autoplay playsinline></video>
         <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <div id="audioLangWrap" class="player-lang">
+          <label for="audioLangSelect">Audio</label>
+          <select id="audioLangSelect"></select>
+        </div>
         <button id="fsPrevBtn" class="fs-nav fs-prev" type="button">Prev</button>
         <button id="fsNextBtn" class="fs-nav fs-next" type="button">Next</button>
       </div>
@@ -61,7 +45,20 @@
       <h3>Channels</h3>
       <div id="liveStatus">Loading channels...</div>
     </div>
+    <div class="panel-status">
+      <div id="nowPlaying">Now Playing: none</div>
+      <div id="nowPlayingMeta">Choose a channel from right panel</div>
+    </div>
 
+    <div class="panel-controls">
+      <button id="toggleFullscreenBtn" type="button">Full Screen</button>
+      <button id="toggleAutoSkipBtn" type="button">Auto Skip: ON</button>
+      <div class="skip-delay">
+        <button class="skip-delay-chip" data-skip-delay="15000" type="button">15s</button>
+        <button class="skip-delay-chip" data-skip-delay="20000" type="button">20s</button>
+        <button class="skip-delay-chip" data-skip-delay="25000" type="button">25s</button>
+      </div>
+    </div>
     <input id="quickSearch" placeholder="Instant channel search">
 
     <div class="filter-row">
@@ -81,15 +78,11 @@
 </div>
 
 <script>
-const mainSearch = document.getElementById("mainSearch")
-const mainSearchBtn = document.getElementById("mainSearchBtn")
 const quickSearch = document.getElementById("quickSearch")
 const languageSelect = document.getElementById("liveLanguage")
 const countrySelect = document.getElementById("liveCountry")
 const categorySelect = document.getElementById("liveCategory")
 const sourceTypeSelect = document.getElementById("sourceType")
-const prevChannelBtn = document.getElementById("prevChannelBtn")
-const nextChannelBtn = document.getElementById("nextChannelBtn")
 const toggleFullscreenBtn = document.getElementById("toggleFullscreenBtn")
 const toggleAutoSkipBtn = document.getElementById("toggleAutoSkipBtn")
 const skipDelayChipEls = Array.from(document.querySelectorAll(".skip-delay-chip"))
@@ -101,6 +94,8 @@ const nowPlayingEl = document.getElementById("nowPlaying")
 const nowPlayingMetaEl = document.getElementById("nowPlayingMeta")
 const videoEl = document.getElementById("livePlayer")
 const frameEl = document.getElementById("liveFrame")
+const audioLangWrap = document.getElementById("audioLangWrap")
+const audioLangSelect = document.getElementById("audioLangSelect")
 const channelGrid = document.getElementById("channelGrid")
 const trendingStrip = document.getElementById("trendingStrip")
 
@@ -118,7 +113,23 @@ let autoSkipEnabled = true
 let autoSkipStartTimeoutMs = DEFAULT_AUTO_SKIP_START_TIMEOUT_MS
 let lastStatusMessage = ""
 let lastStatusAt = 0
-const presetCategories = [
+let audioLangInitialized = false
+let currentAudioTracks = []
+
+function dedupeChannels(list) {
+  const seen = new Set()
+  const output = []
+  for (const ch of Array.isArray(list) ? list : []) {
+    const name = String(ch?.name || "").trim().toLowerCase()
+    const url = String(ch?.streamUrl || ch?.videoId || ch?.channelId || "").trim().toLowerCase()
+    const key = `${name}|${url}`
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    output.push(ch)
+  }
+  return output
+}const presetCategories = [
+
   "movies",
   "sports",
   "comedy",
@@ -240,6 +251,93 @@ function destroyPlayback() {
     hls = null
   }
   videoEl.pause()
+  videoEl.removeAttribute("src")
+  videoEl.load()
+  frameEl.src = ""
+  videoEl.style.display = "none"
+  frameEl.style.display = "none"
+  resetAudioTracks()
+}
+
+function resetAudioTracks() {
+  currentAudioTracks = []
+  audioLangInitialized = false
+  audioLangSelect.innerHTML = ""
+  audioLangSelect.disabled = true
+  audioLangWrap.style.display = "none"
+}
+
+function formatAudioLabel(track, index) {
+  const name = String(track?.name || "").trim()
+  const lang = String(track?.lang || "").trim()
+  if (name && lang) return `${name} (${lang.toUpperCase()})`
+  if (name) return name
+  if (lang) return lang.toUpperCase()
+  return `Track ${index + 1}`
+}
+
+function findHindiTrackIndex(tracks) {
+  return tracks.findIndex(track => {
+    const name = String(track?.name || "").toLowerCase()
+    const lang = String(track?.lang || "").toLowerCase()
+    return lang.startsWith("hi") || name.includes("hindi")
+  })
+}
+
+function renderAudioTracks(tracks, activeIndex) {
+  if (!Array.isArray(tracks) || tracks.length === 0) {
+    resetAudioTracks()
+    return
+  }
+  currentAudioTracks = tracks
+  audioLangSelect.innerHTML = ""
+  tracks.forEach((track, index) => {
+    const option = document.createElement("option")
+    option.value = String(index)
+    option.textContent = formatAudioLabel(track, index)
+    audioLangSelect.appendChild(option)
+  })
+  audioLangWrap.style.display = "flex"
+  audioLangSelect.disabled = false
+  const preferred = findHindiTrackIndex(tracks)
+  const initialIndex = preferred >= 0 ? preferred : Math.max(0, Number(activeIndex) || 0)
+  audioLangSelect.value = String(initialIndex)
+}
+
+function updateAudioTracksFromHls() {
+  if (!hls) return
+  const tracks = Array.isArray(hls.audioTracks) ? hls.audioTracks : []
+  if (tracks.length === 0) {
+    resetAudioTracks()
+    return
+  }
+  renderAudioTracks(tracks, hls.audioTrack)
+  if (!audioLangInitialized) {
+    const preferred = findHindiTrackIndex(tracks)
+    if (preferred >= 0) {
+      hls.audioTrack = preferred
+      audioLangSelect.value = String(preferred)
+    }
+    audioLangInitialized = true
+  }
+}
+
+function updateAudioTracksFromNative() {
+  const tracks = videoEl && videoEl.audioTracks ? Array.from(videoEl.audioTracks) : []
+  if (tracks.length === 0) {
+    resetAudioTracks()
+    return
+  }
+  renderAudioTracks(tracks, tracks.findIndex(t => t.enabled))
+  if (!audioLangInitialized) {
+    const preferred = findHindiTrackIndex(tracks)
+    if (preferred >= 0) {
+      tracks.forEach((t, idx) => { t.enabled = idx === preferred })
+      audioLangSelect.value = String(preferred)
+    }
+    audioLangInitialized = true
+  }
+}videoEl.pause()
   videoEl.removeAttribute("src")
   videoEl.load()
   frameEl.src = ""
@@ -474,6 +572,7 @@ async function playHls(channel, options = {}) {
 
 
   videoEl.style.display = "block"
+  resetAudioTracks()
 
   let hasStarted = false
   let failed = false
@@ -499,6 +598,7 @@ async function playHls(channel, options = {}) {
 
   if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
     videoEl.src = channel.streamUrl
+      videoEl.onloadedmetadata = () => updateAudioTracksFromNative()
   } else {
     const ok = await ensureHlsReady()
     if (ok && window.Hls && window.Hls.isSupported()) {
@@ -510,6 +610,13 @@ async function playHls(channel, options = {}) {
       })
       hls.loadSource(channel.streamUrl)
       hls.attachMedia(videoEl)
+        hls.on(Hls.Events.MANIFEST_PARSED, updateAudioTracksFromHls)
+        hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, updateAudioTracksFromHls)
+        hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, () => {
+          if (hls && Number.isInteger(hls.audioTrack)) {
+            audioLangSelect.value = String(hls.audioTrack)
+          }
+        })
     } else {
       await failAndSkip("HLS player load nahi hua")
       return false
@@ -629,9 +736,7 @@ function categoryMatches(channelCategoryRaw, selectedRaw, channelNameRaw = "") {
 }
 
 function applyFilters() {
-  const qMain = String(mainSearch.value || "").trim().toLowerCase()
-  const qQuick = String(quickSearch.value || "").trim().toLowerCase()
-  const q = qQuick || qMain
+  const q = String(quickSearch.value || "").trim().toLowerCase()
   const language = String(languageSelect.value || "all").toLowerCase()
   const country = String(countrySelect.value || "all").toUpperCase()
   const category = String(categorySelect.value || "all").toLowerCase()
@@ -670,7 +775,7 @@ function applyFilters() {
 }
 
 function quickSearchAndPlay() {
-  const q = String(mainSearch.value || quickSearch.value || "").trim().toLowerCase()
+  const q = String(quickSearch.value || "").trim().toLowerCase()
   if (!q) return
   const match = filteredChannels.find(ch => String(ch.name || "").toLowerCase().includes(q)) || channels.find(ch => String(ch.name || "").toLowerCase().includes(q))
   if (!match) {
@@ -683,7 +788,7 @@ function quickSearchAndPlay() {
 async function init() {
   try {
     const rawChannels = await fetchJson("/api/live-tv?limit=10000")
-    channels = rawChannels.map(ch => ({ ...ch, derivedCategory: inferCategoryBucket(ch) }))
+    channels = dedupeChannels(rawChannels).map(ch => ({ ...ch, derivedCategory: inferCategoryBucket(ch) }))
 
     const languages = [...new Set(channels.map(ch => String(ch.language || "en").toLowerCase()))].sort()
     const categories = [...new Set(channels.map(ch => String(ch.derivedCategory || ch.category || "general").toLowerCase()))].sort()
@@ -700,20 +805,27 @@ async function init() {
   }
 }
 
-mainSearch.addEventListener("input", applyFilters)
 quickSearch.addEventListener("input", applyFilters)
-mainSearch.addEventListener("keydown", event => { if (event.key === "Enter") quickSearchAndPlay() })
 quickSearch.addEventListener("keydown", event => { if (event.key === "Enter") quickSearchAndPlay() })
-mainSearchBtn.addEventListener("click", quickSearchAndPlay)
 languageSelect.addEventListener("change", applyFilters)
 countrySelect.addEventListener("change", applyFilters)
 categorySelect.addEventListener("change", applyFilters)
 sourceTypeSelect.addEventListener("change", applyFilters)
-prevChannelBtn.addEventListener("click", () => playByOffset(-1))
-nextChannelBtn.addEventListener("click", () => playByOffset(1))
 fsPrevBtn.addEventListener("click", () => playByOffset(-1))
 fsNextBtn.addEventListener("click", () => playByOffset(1))
 toggleFullscreenBtn.addEventListener("click", togglePlayerFullscreen)
+  audioLangSelect.addEventListener("change", () => {
+    const idx = Number(audioLangSelect.value)
+    if (hls && Array.isArray(hls.audioTracks) && hls.audioTracks[idx]) {
+      hls.audioTrack = idx
+      return
+    }
+    if (videoEl && videoEl.audioTracks && videoEl.audioTracks.length) {
+      Array.from(videoEl.audioTracks).forEach((track, trackIndex) => {
+        track.enabled = trackIndex === idx
+      })
+    }
+  })
 playerStage.addEventListener("dblclick", event => {
   if (event.target && event.target.closest && event.target.closest("button")) return
   void togglePlayerFullscreen()
@@ -740,6 +852,21 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
