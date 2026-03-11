@@ -82,19 +82,19 @@ function renderNative(src){
   enterFullscreen(video)
 }
 
-async function fetchJson(url){
-  const res = await fetch(url)
+async function fetchJson(url, timeoutMs = 8000){
+  const controller = new AbortController()\n  const timeout = setTimeout(() => controller.abort(), timeoutMs)\n  const res = await fetch(url, { signal: controller.signal })\n  clearTimeout(timeout)
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || "Request failed")
   return data
 }
 
-async function init(){
+async function init(){\n  showStatus("Loading...")
   const rawId = String(videoIdParam || "").trim()
   let video = null
 
   try {
-    const list = await fetchJson("/api/videos")
+    const list = await fetchJson("/api/videos", 8000)
     if (Array.isArray(list)) {
       video = list.find(v => String(v.id) === rawId || String(v._id) === rawId) || null
     }
@@ -113,12 +113,12 @@ async function init(){
 
   if (!video) {
     try {
-      const list = await fetchJson("/api/videos/trending")
+      const list = await fetchJson("/api/videos/trending", 8000)
       if (Array.isArray(list)) {
         video = list.find(v => v.id || v._id) || null
       }
     } catch {
-      showStatus("Open this page from the server or provide ?id=VIDEO_ID")
+      showStatus("API error. Open from server or provide valid ?id. Check /api/videos")
       return
     }
   }
@@ -159,6 +159,7 @@ init()
 </script>
 </body>
 </html>
+
 
 
 
