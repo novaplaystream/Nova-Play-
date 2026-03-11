@@ -90,13 +90,13 @@ async function fetchJson(url){
 }
 
 async function init(){
-  let id = Number.parseInt(videoIdParam || "", 10)
-  if (!Number.isInteger(id) || id <= 0) {
+  let id = String(videoIdParam || "").trim()
+  if (!id) {
     try {
       const list = await fetchJson("/api/videos/trending")
-      const first = Array.isArray(list) ? list.find(v => Number(v.id) > 0) : null
+      const first = Array.isArray(list) ? list.find(v => v._id || v.id) : null
       if (first) {
-        id = Number(first.id)
+        id = String(first._id || first.id)
       }
     } catch {
       showStatus("Open this page from the server or provide ?id=VIDEO_ID")
@@ -140,4 +140,5 @@ init()
 </script>
 </body>
 </html>
+
 
