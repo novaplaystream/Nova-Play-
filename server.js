@@ -631,7 +631,7 @@ async function fetchRemoteLiveChannels(limit = LIVE_TV_REMOTE_DEFAULT_LIMIT) {
 }
 
 async function getLiveTvChannels() {
-  const includeRemote = String(process.env.LIVE_TV_REMOTE_ENABLED || "true").toLowerCase() === "true"
+  const includeRemote = String(process.env.LIVE_TV_REMOTE_ENABLED || "false").toLowerCase() === "true"
   const local = [...LIVE_TV_CHANNELS]
 
   if (!includeRemote) {
@@ -2412,8 +2412,9 @@ function createApp() {
   backfillVideoClassification()
     .then(() => console.log("[AUTO_CLASSIFY] classification backfill completed"))
     .catch(err => console.error("[AUTO_CLASSIFY] classification backfill failed", err.message))
-  const autoImportConfig = parseAutoImportConfig(process.env)
-  if (autoImportConfig.enabled) {
+    const autoImportConfig = parseAutoImportConfig(process.env)
+  const autoImportDisabled = String(process.env.AUTO_IMPORT_DISABLED || "true").toLowerCase() === "true"
+  if (autoImportConfig.enabled && !autoImportDisabled) {
     console.log(`[AUTO_IMPORT] initialized | provider=${autoImportConfig.provider} | intervalMs=${autoImportConfig.intervalMs}`)
     let autoImportRunning = false
     const runAutoImportSafe = async (label) => {
@@ -2435,6 +2436,8 @@ function createApp() {
     setInterval(() => {
       runAutoImportSafe("interval run")
     }, autoImportConfig.intervalMs)
+  } else if (autoImportDisabled) {
+    console.log("[AUTO_IMPORT] disabled by config")
   }
 
   const autoHealEnabled = String(process.env.AUTO_HEAL_ENABLED || "true").toLowerCase() === "true"
@@ -3214,6 +3217,8 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
+
 
 
 
