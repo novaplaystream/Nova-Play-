@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NovaPlay</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+body{background:#0f0f0f;color:white;font-family:Arial;}
+.watchPage{display:flex;gap:30px;padding:20px;}
+.videoSection{max-width:900px;position:relative;}
+.player{width:900px;height:500px;border-radius:10px;}
+.nativePlayer{width:900px;height:500px;border-radius:10px;background:black;}
+.actionBar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:20px;color:#ccc;}
+.actionBar i{cursor:pointer;transition:.2s;}
+.actionBar i:hover{color:white;transform:scale(1.15);}
+.dub-select{background:#1f1f1f;color:#fff;border:1px solid #3a3a3a;border-radius:18px;padding:6px 10px;font-size:13px;}
+.channelRow{display:flex;align-items:center;justify-content:space-between;margin-top:15px;}
+.channelInfo{display:flex;gap:10px;align-items:center;}
+.channelIcon{width:40px;height:40px;border-radius:50%;background:#444;}
+.subscribeBtn{background:#272727;border:none;color:white;padding:8px 15px;border-radius:20px;cursor:pointer;}
+.subscribeBtn:hover{background:#3a3a3a;}
+.description{margin-top:15px;background:#1f1f1f;padding:15px;border-radius:10px;}
+#comments{margin-top:20px;max-width:900px;}
+.commentItem{background:#1f1f1f;padding:10px;margin-top:8px;border-radius:6px;}
+.commentHead{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:12px;color:#b8b8b8}
+.commentAuthor{font-weight:700;color:#e8e8e8}
+.commentSource{display:inline-block;font-size:11px;padding:2px 6px;border-radius:999px;background:#27314a;color:#b9d2ff;margin-left:6px}
+.commentText{white-space:pre-wrap;line-height:1.4}
+.commentSectionTitle{margin-top:14px;margin-bottom:6px;color:#d7d7d7;font-size:13px;font-weight:700}
+.sideSection{width:350px;}
+#status{margin-top:10px;color:#f3c969;min-height:20px;}
+.recoVideo{display:block;margin-bottom:12px;color:white;text-decoration:none;cursor:pointer;}
+.recoVideo p{margin:6px 0 0;}
+.recoVideo img{width:100%;border-radius:8px;aspect-ratio:16/9;object-fit:cover;}
+#upNextOverlay{
+position:absolute;
+inset:0;
+background:rgba(0,0,0,0.82);
+border-radius:10px;
+display:none;
+flex-direction:column;
+padding:16px;
+overflow:auto;
+}
+#upNextOverlay.show{display:flex;}
+.overlayHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.overlayTitle{font-size:20px;font-weight:700;}
+.overlayClose{background:#222;border:none;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;}
+#overlayList{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-content:start;}
+.overlayItem{position:relative;background:#101010;border:1px solid #2a2a2a;padding:0;border-radius:10px;cursor:pointer;min-height:0;overflow:hidden;aspect-ratio:16/9;}
+.overlayItem img{width:100%;height:100%;object-fit:cover;display:block;}
+.overlayItemTitle{font-size:12px;line-height:1.25;max-height:30px;overflow:hidden;color:#fff;}
+.overlayItemMeta{font-size:11px;color:#d7d7d7;margin-top:4px;}
+.overlayItemText{position:absolute;left:0;right:0;bottom:0;padding:8px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.88));}
+@media (max-width:1100px){#overlayList{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media (max-width:760px){#overlayList{grid-template-columns:repeat(2,minmax(0,1fr));}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo"><img src="/assets/novaplay-logo.svg" alt="NovaPlay" style="height:32px;width:auto"></div>
+</header>
+
+<div class="watchPage">
+<div class="videoSection">
+<div id="player"></div>
+</div>
+<audio id="dubAudio" style="display:none"></audio>
+<div id="upNextOverlay">
+  <div class="overlayHeader">
+    <div class="overlayTitle">Recommended Next Videos</div>
+    <button id="overlayClose" class="overlayClose">Close</button>
+  </div>
+  <div id="overlayList"></div>
+</div>
+
+<div class="actionBar">
+<select id="dubLanguageSelect" class="dub-select"><option value="original">Original Audio</option></select>
+<i id="likeBtn" class="fa-solid fa-thumbs-up" title="Like"></i>
+<i id="shareBtn" class="fa-solid fa-share" title="Share"></i>
+<i id="saveBtn" class="fa-solid fa-bookmark" title="Save"></i>
+<i id="copyIdBtn" class="fa-solid fa-copy" title="Copy ID"></i>
+<i id="timestampBtn" class="fa-solid fa-clock" title="Copy Timestamp"></i>
+<i id="watchLaterBtn" class="fa-solid fa-clock-rotate-left" title="Watch Later"></i>
+<i id="reportBtn" class="fa-solid fa-flag" title="Report"></i>
+<i id="reloadBtn" class="fa-solid fa-rotate-right" title="Reload"></i><i id="miniBtn" class="fa-solid fa-down-left-and-up-right-to-center" title="Mini Mode"></i>
+</div>
+
+<h2 id="title"></h2>
+<p id="views"></p>
+<div id="status"></div>
+
+<div class="channelRow">
+<div class="channelInfo">
+<div class="channelIcon"></div>
+<div>
+<b id="channelName">NovaPlay Channel</b><br>
+<span id="subs">1.2M subscribers</span>
+</div>
+</div>
+<div>
+<button id="subscribeBtn" class="subscribeBtn">Subscribe</button>
+<i id="bellBtn" class="fa-solid fa-bell" style="margin-left:10px;cursor:pointer;"></i>
+</div>
+</div>
+
+<div class="description" id="description">Amazing video on NovaPlay</div>
+
+<h3>Comments</h3>
+<input id="commentInput" placeholder="Write comment">
+<button id="commentBtn">Post</button>
+<div id="comments"></div>
+</div>
+
+<div class="sideSection">
+<h3>Recommended</h3>
+<div id="recommended"></div>
+</div>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(location.search)
+let currentVideoId = Number.parseInt(urlParams.get("id"), 10)
+if (!Number.isInteger(currentVideoId)) currentVideoId = 0
+const autoFullscreen = urlParams.get("fs") === "1"
+let pendingFullscreen = autoFullscreen
+
+const DUB_LANG_KEY = "novaplay_dub_language"
+const RECO_CONTEXT_KEY = "novaplay_reco_context"
+const MINIPLAYER_KEY = "novaplay_miniplayer"
+let currentDubLanguage = String(urlParams.get("lang") || localStorage.getItem(DUB_LANG_KEY) || "original").toLowerCase()
+if (!currentDubLanguage) currentDubLanguage = "original"
+
+let currentVideo
+let recommendedVideos = []
+
+function getRecoContext() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(RECO_CONTEXT_KEY) || "{}")
+    return {
+      mode: String(parsed.mode || "auto"),
+      category: String(parsed.category || "all").toLowerCase(),
+      search: String(parsed.search || "").toLowerCase()
+    }
+  } catch {
+    return { mode: "auto", category: "all", search: "" }
+  }
+}
+let ytPlayer
+let ytApiReadyPromise
+let currentNativeVideo
+let dubSyncTimer
+
+const playerContainer = document.getElementById("player")
+const titleEl = document.getElementById("title")
+const viewsEl = document.getElementById("views")
+const channelNameEl = document.getElementById("channelName")
+const subsEl = document.getElementById("subs")
+const statusEl = document.getElementById("status")
+const commentsEl = document.getElementById("comments")
+const recommendedEl = document.getElementById("recommended")
+const overlay = document.getElementById("upNextOverlay")
+const overlayList = document.getElementById("overlayList")
+const overlayClose = document.getElementById("overlayClose")
+const dubLanguageSelect = document.getElementById("dubLanguageSelect")
+const dubAudio = document.getElementById("dubAudio")
+
+function showStatus(message) {
+  statusEl.textContent = message
+}
+
+function getWatchUrl(videoId) {
+  const id = Number(videoId) || 0
+  const params = new URLSearchParams()
+  params.set("id", String(id))
+  if (currentDubLanguage && currentDubLanguage !== "original") {
+    params.set("lang", currentDubLanguage)
+  }
+  if (autoFullscreen) {
+    params.set("fs", "1")
+  }
+  return /watch.html?
+}
+function formatSubscribers(value) {
+  const count = Math.max(0, Number(value) || 0)
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M subscribers`
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K subscribers`
+  if (count > 0) return `${count.toLocaleString()} subscribers`
+  return "Subscribers hidden"
+}
+
+function updateChannelInfo(video) {
+  const source = String(video.source || "local").toLowerCase()
+  const name = String(video.channelName || "").trim()
+
+  if (source === "youtube") {
+    channelNameEl.textContent = name || "YouTube Channel"
+    subsEl.textContent = formatSubscribers(video.subscriberCount)
+    return
+  }
+
+  channelNameEl.textContent = name || `${String(video.source || "NovaPlay")} Channel`
+  subsEl.textContent = "Subscribers not available"
+}
+
+function hideOverlay() {
+  overlay.classList.remove("show")
+}
+
+function showOverlay() {
+  if (recommendedVideos.length === 0) return
+  overlay.classList.add("show")
+}
+
+function isYouTubeStyleId(value) {
+  return /^[A-Za-z0-9_-]{11}$/.test(String(value || ""))
+}
+function getThumbnail(video) {
+  if (video.thumbnailUrl) return video.thumbnailUrl
+  if (video.videoId) return `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`
+  return ""
+}
+
+function canPlayInProject(video) {
+  const source = String(video.source || "local").toLowerCase()
+  if (((source === "youtube" || source === "local") && isYouTubeStyleId(video.videoId)) || (source === "vimeo" && video.videoId) || (source === "dailymotion" && video.videoId) || ((source === "watchmode" || source === "omdb" || source === "trakt") && isYouTubeStyleId(video.videoId))) {
+    return true
+  }
+  if ((source === "watchmode" || source === "omdb" || source === "trakt") && String(video.title || "").trim()) {
+    return true
+  }
+  return Boolean(video.playbackUrl)
+}
+
+async function fetchJson(url, options) {
+  const res = await fetch(url, options)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || "Request failed")
+  return data
+}
+
+function clearDubSyncTimer() {
+  if (dubSyncTimer) {
+    clearInterval(dubSyncTimer)
+    dubSyncTimer = null
+  }
+}
+
+function stopDubAudio() {
+  clearDubSyncTimer()
+  dubAudio.pause()
+  dubAudio.removeAttribute("src")
+  dubAudio.load()
+
+  if (ytPlayer && typeof ytPlayer.unMute === "function") {
+    ytPlayer.unMute()
+  }
+
+  if (currentNativeVideo) {
+    currentNativeVideo.muted = false
+  }
+}
+
+function startDubAudio(url) {
+  if (!url) {
+    stopDubAudio()
+    return
+  }
+
+  clearDubSyncTimer()
+  dubAudio.src = url
+  dubAudio.currentTime = 0
+  dubAudio.play().catch(() => {
+    showStatus("Tap video once to enable dubbed audio")
+  })
+
+  if (ytPlayer && typeof ytPlayer.mute === "function") {
+    ytPlayer.mute()
+  }
+
+  if (currentNativeVideo) {
+    currentNativeVideo.muted = true
+
+    const sync = () => {
+      const drift = Math.abs((dubAudio.currentTime || 0) - (currentNativeVideo.currentTime || 0))
+      if (drift > 0.6) {
+        dubAudio.currentTime = currentNativeVideo.currentTime || 0
+      }
+    }
+
+    currentNativeVideo.onplay = () => {
+      dubAudio.play().catch(() => undefined)
+    }
+    currentNativeVideo.onpause = () => dubAudio.pause()
+    currentNativeVideo.onseeking = () => {
+      dubAudio.currentTime = currentNativeVideo.currentTime || 0
+    }
+    currentNativeVideo.onratechange = () => {
+      dubAudio.playbackRate = currentNativeVideo.playbackRate || 1
+    }
+
+    dubAudio.playbackRate = currentNativeVideo.playbackRate || 1
+    dubAudio.currentTime = currentNativeVideo.currentTime || 0
+
+    dubSyncTimer = setInterval(sync, 1000)
+  }
+}
+
+</script>
+
+<script>
+
+
+
+
+
+function renderIframe(src) {
+  playerContainer.innerHTML = ""
+  const iframe = document.createElement("iframe")
+  iframe.className = "player"
+  iframe.src = src
+  iframe.allowFullscreen = true
+  iframe.setAttribute("frameborder", "0")
+  playerContainer.appendChild(iframe)
+}
+
+
+
+function requestPlayerFullscreen() {
+  const target = currentNativeVideo || playerContainer.querySelector("iframe") || playerContainer
+  if (!target) return false
+  const request = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen
+  if (!request) return false
+  try {
+    const result = request.call(target)
+    if (result && typeof result.catch === "function") {
+      result.catch(() => undefined)
+    }
+    pendingFullscreen = false
+    return true
+  } catch {
+    return false
+  }
+}
+
+function scheduleFullscreenOnGesture() {
+  if (!pendingFullscreen) return
+  const handler = () => {
+    requestPlayerFullscreen()
+    document.removeEventListener("click", handler, true)
+    document.removeEventListener("keydown", handler, true)
+  }
+  document.addEventListener("click", handler, true)
+  document.addEventListener("keydown", handler, true)
+}
+
+function maybeEnterFullscreen() {
+  if (!pendingFullscreen) return
+  if (!requestPlayerFullscreen()) {
+    scheduleFullscreenOnGesture()
+  }
+}
+
+function renderPlayer(video) {
+  const source = String(video?.source || "local").toLowerCase()
+  const id = String(video?.videoId || "")
+  if (isYouTubeStyleId(id)) {
+    renderIframe(https://www.youtube.com/embed/?autoplay=1)
+    maybeEnterFullscreen()
+    return
+  }
+  if (source === "vimeo" && id) {
+    renderIframe(https://player.vimeo.com/video/)
+    maybeEnterFullscreen()
+    return
+  }
+  if (source === "dailymotion" && id) {
+    renderIframe(https://www.dailymotion.com/embed/video/)
+    maybeEnterFullscreen()
+    return
+  }
+  if (video?.playbackUrl) {
+    renderNativeVideo(video.playbackUrl)
+    maybeEnterFullscreen()
+    return
+  }
+  playerContainer.innerHTML = "Unable to play video"
+}
+function createRecommendedCard(video) {
+  const wrapper = document.createElement("div")
+  wrapper.className = "recoVideo"
+  wrapper.addEventListener("click", () => openVideo(video.id, true))
+
+  const image = document.createElement("img")
+  image.src = getThumbnail(video)
+  image.alt = `${video.title} thumbnail`
+
+  const text = document.createElement("p")
+  text.textContent = video.title
+
+  wrapper.appendChild(image)
+  wrapper.appendChild(text)
+  return wrapper
+}
+
+function createOverlayItem(video) {
+  const item = document.createElement("div")
+  item.className = "overlayItem"
+  item.addEventListener("click", () => openVideo(video.id, true))
+
+  const image = document.createElement("img")
+  image.src = getThumbnail(video)
+  image.alt = `${video.title} thumbnail`
+
+  const textWrap = document.createElement("div")
+  textWrap.className = "overlayItemText"
+
+  const title = document.createElement("div")
+  title.className = "overlayItemTitle"
+  title.textContent = video.title
+
+  const meta = document.createElement("div")
+  meta.className = "overlayItemMeta"
+  meta.textContent = `${video.source || "local"} | ${(Number(video.views) || 0).toLocaleString()} views`
+
+  textWrap.appendChild(title)
+  textWrap.appendChild(meta)
+  item.appendChild(image)
+  item.appendChild(textWrap)
+  return item
+}
+
+function getOverlayCapacity() {
+  const playerWidth = Math.max(640, Number(playerContainer?.clientWidth) || 900)
+  const playerHeight = Math.max(360, Number(playerContainer?.clientHeight) || 500)
+
+  let cols = 4
+  if (playerWidth < 760) cols = 2
+  else if (playerWidth < 1100) cols = 3
+
+  const rows = Math.max(1, Math.floor((playerHeight - 70) / 120))
+  return Math.max(4, cols * rows)
+}
+
+function renderOverlayRecommendations() {
+  overlayList.innerHTML = ""
+  const visibleCount = getOverlayCapacity()
+  recommendedVideos.slice(0, visibleCount).forEach(video => overlayList.appendChild(createOverlayItem(video)))
+}function formatTimeAgo(isoTime) {
+  const ts = Date.parse(String(isoTime || ""))
+  if (!Number.isFinite(ts)) return "just now"
+  const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000))
+  if (sec < 60) return `${sec}s ago`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}m ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}h ago`
+  const day = Math.floor(hr / 24)
+  return `${day}d ago`
+}
+
+function createCommentItem({ author, text, createdAt, source }) {
+  const item = document.createElement("div")
+  item.className = "commentItem"
+
+  const head = document.createElement("div")
+  head.className = "commentHead"
+
+  const left = document.createElement("div")
+  const authorEl = document.createElement("span")
+  authorEl.className = "commentAuthor"
+  authorEl.textContent = author || "User"
+  left.appendChild(authorEl)
+
+  if (source) {
+    const sourceEl = document.createElement("span")
+    sourceEl.className = "commentSource"
+    sourceEl.textContent = source
+    left.appendChild(sourceEl)
+  }
+
+  const timeEl = document.createElement("span")
+  timeEl.textContent = formatTimeAgo(createdAt)
+
+  const textEl = document.createElement("div")
+  textEl.className = "commentText"
+  textEl.textContent = String(text || "")
+
+  head.appendChild(left)
+  head.appendChild(timeEl)
+  item.appendChild(head)
+  item.appendChild(textEl)
+  return item
+}
+
+function renderComments(payload) {
+  commentsEl.innerHTML = ""
+  const localComments = Array.isArray(payload?.localComments) ? payload.localComments : []
+  const youtubeComments = Array.isArray(payload?.youtubeComments) ? payload.youtubeComments : []
+
+  if (youtubeComments.length > 0) {
+    const label = document.createElement("div")
+    label.className = "commentSectionTitle"
+    label.textContent = "YouTube Comments"
+    commentsEl.appendChild(label)
+    youtubeComments.forEach(comment => {
+      commentsEl.appendChild(createCommentItem({
+        author: comment.author,
+        text: comment.text,
+        createdAt: comment.publishedAt,
+        source: "YouTube"
+      }))
+    })
+  }
+
+  const localLabel = document.createElement("div")
+  localLabel.className = "commentSectionTitle"
+  localLabel.textContent = "NovaPlay Comments"
+  commentsEl.appendChild(localLabel)
+
+  if (localComments.length === 0) {
+    const empty = document.createElement("div")
+    empty.className = "muted"
+    empty.textContent = "No comments yet. Be the first to comment."
+    commentsEl.appendChild(empty)
+    return
+  }
+
+  localComments.forEach(comment => {
+    commentsEl.appendChild(createCommentItem({
+      author: "NovaPlay user",
+      text: comment.text,
+      createdAt: comment.createdAt,
+      source: "NovaPlay"
+    }))
+  })
+}
+
+async function loadRecommended() {
+  try {
+    const videos = await fetchJson("/api/videos/trending")
+    const context = getRecoContext()
+
+    let list = videos.filter(v => Number(v.id) !== currentVideoId && canPlayInProject(v))
+
+    if (context.search) {
+      list = list.filter(video => String(video.title || "").toLowerCase().includes(context.search))
+    }
+
+    if (context.category && context.category !== "all") {
+      list = list.filter(video => String(video.category || "general").toLowerCase() === context.category)
+      if (list.length === 0) {
+        list = videos.filter(v => Number(v.id) !== currentVideoId && canPlayInProject(v))
+      }
+    }
+
+    recommendedVideos = list
+
+    recommendedEl.innerHTML = ""
+    recommendedVideos.forEach(video => recommendedEl.appendChild(createRecommendedCard(video)))
+    renderOverlayRecommendations()
+  } catch (err) {
+    showStatus(`Unable to load recommendations: ${err.message}`)
+  }
+}
+
+async function loadComments() {
+  try {
+    const [localComments, sourceCommentsResult] = await Promise.all([
+      fetchJson(`/api/comments/${currentVideoId}`),
+      fetchJson(`/api/video/${currentVideoId}/source-comments?limit=15`).catch(() => ({ comments: [] }))
+    ])
+
+    renderComments({
+      localComments,
+      youtubeComments: Array.isArray(sourceCommentsResult?.comments) ? sourceCommentsResult.comments : []
+    })
+  } catch (err) {
+    showStatus(`Unable to load comments: ${err.message}`)
+  }
+}
+
+async function applyDubPreference() {
+  if (!currentVideo) return
+
+  if (currentDubLanguage === "original") {
+    stopDubAudio()
+    return
+  }
+
+  try {
+    const jobs = await fetchJson(`/api/video/${currentVideoId}/dubs`)
+    const match = Array.isArray(jobs)
+      ? jobs.find(job => String(job.language || "").toLowerCase() === currentDubLanguage && String(job.audioUrl || ""))
+      : null
+
+    if (match) {
+      startDubAudio(match.audioUrl)
+      showStatus(`Auto dub active: ${currentDubLanguage}`)
+      return
+    }
+
+    const queued = Array.isArray(jobs)
+      ? jobs.find(job => String(job.language || "").toLowerCase() === currentDubLanguage)
+      : null
+
+    stopDubAudio()
+    if (queued) {
+      showStatus(`Dub ${currentDubLanguage} ??? ${queued.status || "processing"} ??? ??. Original audio ?? ??? ??.`)
+    } else {
+      showStatus(`Dub ${currentDubLanguage} available ???? ??. Original audio ?? ??? ??.`)
+    }
+  } catch (err) {
+    stopDubAudio()
+    showStatus(`Dub load failed: ${err.message}`)
+  }
+}
+
+async function loadDubLanguages() {
+  try {
+    const languages = await fetchJson("/api/languages")
+    const list = Array.isArray(languages) ? languages : []
+
+    dubLanguageSelect.innerHTML = ""
+    const original = document.createElement("option")
+    original.value = "original"
+    original.textContent = "Original Audio"
+    dubLanguageSelect.appendChild(original)
+
+    list.forEach(language => {
+      const option = document.createElement("option")
+      option.value = language
+      option.textContent = language
+      dubLanguageSelect.appendChild(option)
+    })
+
+    const exists = list.includes(currentDubLanguage)
+    dubLanguageSelect.value = exists ? currentDubLanguage : "original"
+    if (!exists) currentDubLanguage = "original"
+  } catch {
+    dubLanguageSelect.value = "original"
+    currentDubLanguage = "original"
+  }
+}
+
+async function openVideo(videoId, pushHistory) {
+  const parsed = Number.parseInt(videoId, 10)
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    showStatus("Invalid video id")
+    return
+  }
+
+  try {
+    currentVideoId = parsed
+    currentVideo = await fetchJson(`/api/video/${currentVideoId}`)
+    const viewResult = await fetchJson(`/api/video/${currentVideoId}/view`, { method: "POST" })
+
+    titleEl.textContent = currentVideo.title
+    viewsEl.textContent = `Views: ${viewResult.views}`
+    updateChannelInfo(currentVideo)
+
+    await renderPlayer(currentVideo)
+    await Promise.all([loadRecommended(), loadComments()])
+    await applyDubPreference()
+
+    if (pushHistory) {
+      history.pushState({ id: currentVideoId, lang: currentDubLanguage }, "", getWatchUrl(currentVideoId))
+    }
+  } catch (err) {
+    showStatus(`Unable to load video: ${err.message}`)
+  }
+}
+
+overlayClose.addEventListener("click", hideOverlay)
+window.addEventListener("resize", renderOverlayRecommendations)
+window.addEventListener("popstate", () => {
+  const params = new URLSearchParams(location.search)
+  const id = Number.parseInt(params.get("id"), 10)
+  const lang = String(params.get("lang") || "original").toLowerCase()
+  currentDubLanguage = lang || "original"
+  dubLanguageSelect.value = currentDubLanguage
+  openVideo(id, false)
+})
+
+dubLanguageSelect.addEventListener("change", async () => {
+  currentDubLanguage = String(dubLanguageSelect.value || "original").toLowerCase()
+  localStorage.setItem(DUB_LANG_KEY, currentDubLanguage)
+  history.replaceState({ id: currentVideoId, lang: currentDubLanguage }, "", getWatchUrl(currentVideoId))
+  await applyDubPreference()
+})
+document.getElementById("likeBtn").onclick = async () => {
+  try {
+    await fetchJson(`/api/like/${currentVideoId}`, { method: "POST" })
+    showStatus("Liked")
+  } catch (err) {
+    showStatus(`Like failed: ${err.message}`)
+  }
+}
+
+document.getElementById("shareBtn").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    showStatus("Link copied")
+  } catch {
+    showStatus("Unable to copy link")
+  }
+}
+
+document.getElementById("saveBtn").onclick = async () => {
+  try {
+    await fetchJson("/api/favorite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoId: currentVideoId })
+    })`n    showStatus("Saved to favorites")
+  } catch (err) {
+    showStatus(`Save failed: ${err.message}`)
+  }
+}
+
+document.getElementById("subscribeBtn").onclick = () => {
+  if (!currentVideo) {
+    showStatus("Video not loaded yet")
+    return
+  }
+
+  const source = String(currentVideo.source || "").toLowerCase()
+  if (source === "youtube" && currentVideo.channelId) {
+    window.open(
+      `https://www.youtube.com/channel/${encodeURIComponent(currentVideo.channelId)}?sub_confirmation=1`,
+      "subscribe",
+      "width=600,height=600"
+    )
+    return
+  }
+
+  if (source === "youtube" && currentVideo.channelName) {
+    const q = encodeURIComponent(currentVideo.channelName)
+    window.open(
+      `https://www.youtube.com/results?search_query=${q}`,
+      "subscribe",
+      "width=900,height=700"
+    )
+    return
+  }
+
+  showStatus("Subscribe link available only for YouTube channels")
+}
+
+document.getElementById("bellBtn").onclick = () => {
+  showStatus("Enable notifications on YouTube after subscribing")
+}
+
+document.getElementById("copyIdBtn").onclick = async () => {
+  if (!currentVideo) {
+    showStatus("Video not loaded yet")
+    return
+  }
+  if (!currentVideo.videoId) {
+    showStatus("Source video ID not available")
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(currentVideo.videoId)
+    showStatus("Video ID copied")
+  } catch {
+    showStatus("Unable to copy video ID")
+  }
+}
+
+document.getElementById("timestampBtn").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    showStatus("Timestamp copied")
+  } catch {
+    showStatus("Unable to copy timestamp")
+  }
+}
+
+document.getElementById("watchLaterBtn").onclick = () => {
+  const list = JSON.parse(localStorage.getItem("watchLater") || "[]")
+  if (!list.includes(String(currentVideoId))) {
+    list.push(String(currentVideoId))
+  }
+  localStorage.setItem("watchLater", JSON.stringify(list))
+  showStatus("Added to watch later")
+}
+
+document.getElementById("reportBtn").onclick = () => {
+  showStatus("Video reported")
+}
+
+document.getElementById("reloadBtn").onclick = () => {
+  openVideo(currentVideoId, false)
+}
+
+document.getElementById("miniBtn").onclick = () => {
+  if (!currentVideo) {
+    showStatus("Video not loaded yet")
+    return
+  }
+
+  const payload = {
+    id: Number(currentVideo.id) || Number(currentVideoId) || 0,
+    title: String(currentVideo.title || "NovaPlay"),
+    source: String(currentVideo.source || "local"),
+    videoId: String(currentVideo.videoId || ""),
+    playbackUrl: String(currentVideo.playbackUrl || ""),
+    thumbnailUrl: String(currentVideo.thumbnailUrl || "")
+  }
+
+  localStorage.setItem(MINIPLAYER_KEY, JSON.stringify(payload))
+  window.location.href = "/"
+}
+
+document.getElementById("commentBtn").onclick = async () => {
+  const text = document.getElementById("commentInput").value.trim()
+  if (!text) {
+    showStatus("Comment cannot be empty")
+    return
+  }
+  try {
+    await fetchJson("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoId: currentVideoId, text })
+    })
+    document.getElementById("commentInput").value = ""
+    await loadComments()
+    showStatus("Comment posted")
+  } catch (err) {
+    showStatus(`Comment failed: ${err.message}`)
+  }
+}
+
+document.getElementById("commentInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    document.getElementById("commentBtn").click()
+  }
+})
+
+async function initWatchPage() {
+  await loadDubLanguages()
+
+  if (currentVideoId > 0) {
+    await openVideo(currentVideoId, false)
+    return
+  }
+
+  try {
+    const videos = await fetchJson("/api/videos/trending")
+    const first = Array.isArray(videos) ? videos.find(canPlayInProject) : null
+    if (!first) {
+      showStatus("No playable videos available")
+      return
+    }
+    await openVideo(first.id, false)
+  } catch (err) {
+    showStatus(`Unable to initialize player: ${err.message}`)
+  }
+}
+
+initWatchPage()
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+

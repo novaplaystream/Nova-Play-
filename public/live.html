@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NovaPlay Live</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700&family=Sora:wght@600&display=swap" rel="stylesheet">
+</head>
+<body class="home-body live16">
+<header class="live-appbar">
+  <div class="brand">
+    <img src="/assets/novaplay-mark.svg" alt="NovaPlay">
+    <div class="brand-title">NovaPlay Live</div>
+  </div>
+  <nav class="nav-links">
+    <a href="/">Home</a>
+    <a class="active" href="/live.html">Live TV</a>
+  </nav>
+</header>
+
+<div class="live-layout">
+
+  <main class="content">
+    <div class="search-hero">
+      <input id="mainSearch" placeholder="Search channels like JioTV style...">
+      <button id="mainSearchBtn" type="button">Find & Play</button>
+    </div>
+
+    <section class="player-card">
+      <div class="player-head">
+        <div>
+          <div id="nowPlaying">Now Playing: none</div>
+          <div id="nowPlayingMeta">Choose a channel from right panel</div>
+        </div>
+        <div class="player-actions">
+          <button id="prevChannelBtn" type="button">Prev</button>
+          <button id="nextChannelBtn" type="button">Next</button>
+          <button id="toggleFullscreenBtn" type="button">Full Screen</button>
+          <button id="toggleAutoSkipBtn" type="button">Auto Skip: ON</button>
+          <button class="skip-delay-chip" data-skip-delay="15000" type="button">15s</button>
+          <button class="skip-delay-chip" data-skip-delay="20000" type="button">20s</button>
+          <button class="skip-delay-chip" data-skip-delay="25000" type="button">25s</button>
+        </div>
+      </div>
+      <div id="playerStage" class="player-stage">
+        <video id="livePlayer" controls controlsList="nofullscreen" autoplay playsinline></video>
+        <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <button id="fsPrevBtn" class="fs-nav fs-prev" type="button">Prev</button>
+        <button id="fsNextBtn" class="fs-nav fs-next" type="button">Next</button>
+      </div>
+    </section>
+
+    <section id="trendingStrip" class="trending-strip"></section>
+  </main>
+
+  <aside class="list-panel">
+    <div class="panel-title">
+      <h3>Channels</h3>
+      <div id="liveStatus">Loading channels...</div>
+    </div>
+
+    <input id="quickSearch" placeholder="Instant channel search">
+
+    <div class="filter-row">
+      <select id="liveLanguage"><option value="all">All Languages</option></select>
+      <select id="liveCountry"><option value="all">All Countries</option></select>
+      <select id="liveCategory"><option value="all">All Categories</option></select>
+      <select id="sourceType">
+        <option value="all">All Sources</option>
+        <option value="youtube">YouTube</option>
+        <option value="youtubevideo">YouTube Video</option>
+        <option value="hls">HLS</option>
+      </select>
+    </div>
+
+    <div id="channelGrid" class="channel-list"></div>
+  </aside>
+</div>
+
+<script>
+const mainSearch = document.getElementById("mainSearch")
+const mainSearchBtn = document.getElementById("mainSearchBtn")
+const quickSearch = document.getElementById("quickSearch")
+const languageSelect = document.getElementById("liveLanguage")
+const countrySelect = document.getElementById("liveCountry")
+const categorySelect = document.getElementById("liveCategory")
+const sourceTypeSelect = document.getElementById("sourceType")
+const prevChannelBtn = document.getElementById("prevChannelBtn")
+const nextChannelBtn = document.getElementById("nextChannelBtn")
+const toggleFullscreenBtn = document.getElementById("toggleFullscreenBtn")
+const toggleAutoSkipBtn = document.getElementById("toggleAutoSkipBtn")
+const skipDelayChipEls = Array.from(document.querySelectorAll(".skip-delay-chip"))
+const fsPrevBtn = document.getElementById("fsPrevBtn")
+const fsNextBtn = document.getElementById("fsNextBtn")
+const playerStage = document.getElementById("playerStage")
+const statusEl = document.getElementById("liveStatus")
+const nowPlayingEl = document.getElementById("nowPlaying")
+const nowPlayingMetaEl = document.getElementById("nowPlayingMeta")
+const videoEl = document.getElementById("livePlayer")
+const frameEl = document.getElementById("liveFrame")
+const channelGrid = document.getElementById("channelGrid")
+const trendingStrip = document.getElementById("trendingStrip")
+
+let channels = []
+let filteredChannels = []
+let currentChannelKey = ""
+let hls
+let hlsLoaderPromise = null
+let hlsPlaybackTimeout = null
+let autoSkipToken = 0
+const DEFAULT_AUTO_SKIP_START_TIMEOUT_MS = 15000
+const AUTO_SKIP_RETRY_DELAY_MS = 450
+const AUTO_SKIP_MAX_ATTEMPTS = 25
+let autoSkipEnabled = true
+let autoSkipStartTimeoutMs = DEFAULT_AUTO_SKIP_START_TIMEOUT_MS
+let lastStatusMessage = ""
+let lastStatusAt = 0
+const presetCategories = [
+  "movies",
+  "sports",
+  "comedy",
+  "history",
+  "documentary",
+  "news",
+  "music",
+  "kids",
+  "entertainment",
+  "lifestyle",
+  "travel",
+  "business",
+  "science",
+  "education",
+  "religion"
+]
+
+function setStatus(message, options = {}) {
+  const next = String(message || "").trim()
+  if (!next) return
+
+  const force = options && options.force === true
+  const now = Date.now()
+  if (!force) {
+    if (next === lastStatusMessage) return
+    if (now - lastStatusAt < 900 && next.toLowerCase().startsWith("playing ")) return
+  }
+
+  statusEl.textContent = next
+  lastStatusMessage = next
+  lastStatusAt = now
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || "Request failed")
+  return data
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script")
+    script.src = src
+    script.async = true
+    script.onload = () => resolve(true)
+    script.onerror = () => reject(new Error(`Failed to load ${src}`))
+    document.head.appendChild(script)
+  })
+}
+
+async function ensureHlsReady() {
+  if (window.Hls) return true
+  if (!hlsLoaderPromise) {
+    hlsLoaderPromise = (async () => {
+      const sources = [
+        "https://cdn.jsdelivr.net/npm/hls.js@1",
+        "https://unpkg.com/hls.js@1/dist/hls.min.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"
+      ]
+      for (const src of sources) {
+        try {
+          await loadScript(src)
+          if (window.Hls) return true
+        } catch {}
+      }
+      return false
+    })()
+  }
+  return hlsLoaderPromise
+}
+
+function fillSelect(select, values, allLabel) {
+  select.innerHTML = ""
+  const all = document.createElement("option")
+  all.value = "all"
+  all.textContent = allLabel
+  select.appendChild(all)
+
+  values.forEach(value => {
+    const option = document.createElement("option")
+    option.value = value
+    option.textContent = value
+    select.appendChild(option)
+  })
+}
+
+function extractYouTubeVideoIdFromUrl(urlValue) {
+  const raw = String(urlValue || "")
+  if (!raw) return ""
+
+  try {
+    const url = new URL(raw)
+    if (url.hostname.includes("youtu.be")) return url.pathname.replace(/^\//, "")
+    if (url.hostname.includes("youtube.com")) {
+      const v = url.searchParams.get("v")
+      if (v) return v
+      const parts = url.pathname.split("/").filter(Boolean)
+      if (parts[0] === "embed" && parts[1]) return parts[1]
+      if (parts[0] === "live" && parts[1]) return parts[1]
+    }
+  } catch {
+    return ""
+  }
+  return ""
+}
+
+function clearHlsPlaybackTimeout() {
+  if (hlsPlaybackTimeout) {
+    clearTimeout(hlsPlaybackTimeout)
+    hlsPlaybackTimeout = null
+  }
+}
+
+function destroyPlayback() {
+  clearHlsPlaybackTimeout()
+  if (hls) {
+    hls.destroy()
+    hls = null
+  }
+  videoEl.pause()
+  videoEl.removeAttribute("src")
+  videoEl.load()
+  frameEl.src = ""
+  videoEl.style.display = "none"
+  frameEl.style.display = "none"
+}
+
+function getChannelKey(channel) {
+  return String(channel?.id || `${channel?.name || "unknown"}|${channel?.streamUrl || channel?.videoId || channel?.channelId || ""}`)
+}
+
+function channelPriority(channel) {
+  const source = String(channel?.source || "").toLowerCase()
+  if (source === "youtube") return 0
+  if (source === "youtubevideo") return 1
+  if (source === "hls") return 2
+  return 3
+}
+
+const knownChannelLogoDomains = {
+  "dw news": "dw.com",
+  "france 24 english": "france24.com",
+  "sky news": "news.sky.com",
+  "al jazeera english": "aljazeera.com",
+  "sansad tv": "sansadtv.nic.in",
+  "dd news": "ddnews.gov.in",
+  "lok sabha tv": "loksabha.nic.in"
+}
+
+function getKnownChannelFavicon(name) {
+  const key = String(name || "").trim().toLowerCase()
+  const domain = knownChannelLogoDomains[key]
+  if (!domain) return ""
+  return `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(domain)}`
+}
+function getFaviconFromWebsite(website) {
+  const raw = String(website || "").trim()
+  if (!raw) return ""
+
+  try {
+    const normalized = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`
+    const host = new URL(normalized).hostname
+    if (!host) return ""
+    return `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(host)}`
+  } catch {
+    return ""
+  }
+}
+
+function getChannelLogoUrl(channel) {
+  if (channel?.logo && String(channel.logo).trim()) return String(channel.logo).trim()
+
+  const knownLogo = getKnownChannelFavicon(channel?.name)
+  if (knownLogo) return knownLogo
+
+  const websiteLogo = getFaviconFromWebsite(channel?.website)
+  if (websiteLogo) return websiteLogo
+
+  if (String(channel?.source || "").toLowerCase() === "youtube" && channel?.channelId) {
+    return `https://unavatar.io/youtube/${encodeURIComponent(String(channel.channelId))}`
+  }
+
+  if (String(channel?.source || "").toLowerCase() === "youtubevideo" && channel?.videoId) {
+    return `https://i.ytimg.com/vi/${encodeURIComponent(String(channel.videoId))}/hqdefault.jpg`
+  }
+
+  return ""
+}
+
+function formatMeta(channel) {
+  return `${String(channel.country || "GLOBAL").toUpperCase()} | ${String(channel.language || "en").toLowerCase()} | ${String(channel.category || "general").toLowerCase()} | ${String(channel.source || "local").toLowerCase()}`
+}
+
+function renderChannelCards(list) {
+  channelGrid.innerHTML = ""
+
+  if (!list.length) {
+    const empty = document.createElement("div")
+    empty.className = "channel-card"
+    empty.innerHTML = '<div class="channel-name">No channels found</div><div class="channel-meta">Try another search/filter</div>'
+    channelGrid.appendChild(empty)
+    return
+  }
+
+  list.forEach(channel => {
+    const card = document.createElement("div")
+    card.className = "channel-card"
+    if (getChannelKey(channel) === currentChannelKey) card.classList.add("active")
+
+    const logo = document.createElement("img")
+    logo.className = "channel-logo"
+    logo.alt = channel.name || "channel"
+    logo.referrerPolicy = "no-referrer"
+    logo.src = getChannelLogoUrl(channel) || "https://dummyimage.com/128x88/1a2b4d/9ab3df&text=LIVE"
+    logo.onerror = () => { logo.src = "https://dummyimage.com/128x88/1a2b4d/9ab3df&text=TV" }
+
+    const info = document.createElement("div")
+    const name = document.createElement("div")
+    name.className = "channel-name"
+    name.textContent = channel.name || "Untitled Channel"
+
+    const meta = document.createElement("div")
+    meta.className = "channel-meta"
+    meta.textContent = formatMeta(channel)
+
+    info.appendChild(name)
+    info.appendChild(meta)
+    card.appendChild(logo)
+    card.appendChild(info)
+
+    card.addEventListener("click", () => playChannel(channel, { userInitiated: true }))
+    channelGrid.appendChild(card)
+  })
+}
+
+function renderTrending(list) {
+  trendingStrip.innerHTML = ""
+  const top = list.slice(0, 3)
+  if (!top.length) return
+
+  top.forEach(ch => {
+    const card = document.createElement("div")
+    card.className = "strip-card"
+    if (getChannelKey(ch) === currentChannelKey) card.classList.add("active")
+    card.innerHTML = `<div class="strip-name">${String(ch.name || "Live")}</div><div class="strip-meta">${String(ch.category || "general")} | ${String(ch.country || "GLOBAL").toUpperCase()}</div>`
+    card.addEventListener("click", () => playChannel(ch, { userInitiated: true }))
+    trendingStrip.appendChild(card)
+  })
+}
+
+function playByOffset(offset) {
+  if (!filteredChannels.length) return
+  const idx = filteredChannels.findIndex(ch => getChannelKey(ch) === currentChannelKey)
+  const start = idx >= 0 ? idx : 0
+  const next = (start + offset + filteredChannels.length) % filteredChannels.length
+  playChannel(filteredChannels[next], { userInitiated: true })
+}
+
+async function tryAutoSkip(currentChannel, reason, attemptedKeys = new Set(), playToken = autoSkipToken) {
+  if (playToken !== autoSkipToken) return false
+  if (!filteredChannels.length) return false
+
+  const attempts = attemptedKeys instanceof Set ? new Set(attemptedKeys) : new Set()
+  const currentKey = getChannelKey(currentChannel)
+  attempts.add(currentKey)
+
+  if (attempts.size >= AUTO_SKIP_MAX_ATTEMPTS) {
+    setStatus(`${reason}. Auto-skip max attempts reached.`)
+    return false
+  }
+
+  const startIdx = Math.max(0, filteredChannels.findIndex(ch => getChannelKey(ch) === currentKey))
+
+  for (let step = 1; step < filteredChannels.length; step += 1) {
+    const idx = (startIdx + step) % filteredChannels.length
+    const candidate = filteredChannels[idx]
+    const key = getChannelKey(candidate)
+    if (attempts.has(key)) continue
+
+    attempts.add(key)
+    setStatus(`${reason}. Auto-switching to ${candidate.name}...`)
+    await new Promise(resolve => setTimeout(resolve, AUTO_SKIP_RETRY_DELAY_MS))
+    if (playToken !== autoSkipToken) return false
+
+    return playChannel(candidate, { attemptedKeys: attempts, playToken, userInitiated: true, isAutoSkipRetry: true })
+  }
+
+  setStatus(`${reason}. No more playable channels in current filter.`)
+  return false
+}
+
+async function togglePlayerFullscreen() {
+  try {
+    const isFs = document.fullscreenElement === playerStage || document.webkitFullscreenElement === playerStage
+    if (isFs) {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen()
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen()
+      }
+      return
+    }
+    if (playerStage.requestFullscreen) {
+      await playerStage.requestFullscreen()
+    } else if (playerStage.webkitRequestFullscreen) {
+      playerStage.webkitRequestFullscreen()
+    }
+  } catch {}
+}
+
+function syncFullscreenButtonState() {
+  const isFs = document.fullscreenElement === playerStage || document.webkitFullscreenElement === playerStage
+  toggleFullscreenBtn.textContent = isFs ? "Exit Full Screen" : "Full Screen"
+}
+
+function syncAutoSkipButtonState() {
+  toggleAutoSkipBtn.textContent = autoSkipEnabled ? "Auto Skip: ON" : "Auto Skip: OFF"
+}
+
+function syncSkipDelayChipState() {
+  skipDelayChipEls.forEach(chip => {
+    const chipDelay = Number(chip.dataset.skipDelay || 0)
+    chip.classList.toggle("active", chipDelay === autoSkipStartTimeoutMs)
+  })
+}
+
+async function playYouTube(videoId, channel) {
+  frameEl.src = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1`
+  frameEl.style.display = "block"
+  nowPlayingEl.textContent = `Now Playing: ${channel.name}`
+  nowPlayingMetaEl.textContent = formatMeta(channel)
+  setStatus(`Playing ${channel.name}`)
+}
+
+async function playHls(channel, options = {}) {
+  const playToken = Number(options.playToken || autoSkipToken)
+  const allowAutoSkip = autoSkipEnabled && (options.userInitiated === true || options.isAutoSkipRetry === true)
+  const attemptedKeys = options.attemptedKeys instanceof Set ? options.attemptedKeys : new Set([getChannelKey(channel)])
+
+  if (!channel.streamUrl) {
+    const reason = `Stream URL missing for ${channel.name}`
+    setStatus(reason)
+    if (allowAutoSkip) {
+      await tryAutoSkip(channel, reason, options.attemptedKeys, options.playToken)
+    }
+    return false
+  }
+
+
+  videoEl.style.display = "block"
+
+  let hasStarted = false
+  let failed = false
+
+  const markStarted = () => {
+    hasStarted = true
+    clearHlsPlaybackTimeout()
+  }
+
+  const failAndSkip = async reason => {
+    if (failed || playToken !== autoSkipToken) return false
+    failed = true
+    clearHlsPlaybackTimeout()
+    setStatus(reason)
+    if (allowAutoSkip) {
+      await tryAutoSkip(channel, reason, attemptedKeys, playToken)
+    }
+    return false
+  }
+
+  videoEl.onerror = () => { void failAndSkip(`Unable to play ${channel.name}`) }
+  videoEl.addEventListener("playing", markStarted, { once: true })
+
+  if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+    videoEl.src = channel.streamUrl
+  } else {
+    const ok = await ensureHlsReady()
+    if (ok && window.Hls && window.Hls.isSupported()) {
+      hls = new Hls({ lowLatencyMode: true })
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data && data.fatal) {
+          void failAndSkip(`Stream failed for ${channel.name}`)
+        }
+      })
+      hls.loadSource(channel.streamUrl)
+      hls.attachMedia(videoEl)
+    } else {
+      await failAndSkip("HLS player load nahi hua")
+      return false
+    }
+  }
+
+  clearHlsPlaybackTimeout()
+  hlsPlaybackTimeout = setTimeout(() => {
+    if (!hasStarted) {
+      void failAndSkip(`Stream timeout: ${channel.name}`)
+    }
+  }, autoSkipStartTimeoutMs)
+
+  videoEl.play().catch(() => setStatus("Player par click karke stream start karein"))
+  nowPlayingEl.textContent = `Now Playing: ${channel.name}`
+  nowPlayingMetaEl.textContent = formatMeta(channel)
+  setStatus(`Playing ${channel.name}`)
+  return true
+}
+
+async function playChannel(channel, options = {}) {
+  const attemptedKeys = options.attemptedKeys instanceof Set ? options.attemptedKeys : new Set()
+  const channelKey = getChannelKey(channel)
+  const playToken = Number(options.playToken || ++autoSkipToken)
+  const userInitiated = options.userInitiated === true
+
+  currentChannelKey = channelKey
+  destroyPlayback()
+  renderChannelCards(filteredChannels)
+  renderTrending(filteredChannels)
+
+  const nextAttempts = new Set(attemptedKeys)
+  nextAttempts.add(channelKey)
+
+  if (channel.source === "youtube" && channel.channelId) {
+    frameEl.src = `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channel.channelId)}&autoplay=1`
+    frameEl.style.display = "block"
+    nowPlayingEl.textContent = `Now Playing: ${channel.name}`
+    nowPlayingMetaEl.textContent = formatMeta(channel)
+    setStatus(`Playing ${channel.name}`)
+    return true
+  }
+
+  if (channel.source === "youtubeVideo" && channel.videoId) {
+    await playYouTube(channel.videoId, channel)
+    return true
+  }
+
+  if (channel.source === "hls") {
+    return playHls(channel, { attemptedKeys: nextAttempts, playToken, userInitiated })
+  }
+
+  const ytFromUrl = extractYouTubeVideoIdFromUrl(channel.streamUrl)
+  if (ytFromUrl) {
+    await playYouTube(ytFromUrl, channel)
+    return true
+  }
+
+  const reason = `Unplayable source: ${channel.name}`
+  setStatus(reason)
+  if (userInitiated) {
+    await tryAutoSkip(channel, reason, nextAttempts, playToken)
+  }
+  return false
+}
+
+function normalizeCategoryValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+
+function getCategoryAliases() {
+  return {
+    movies: ["movie", "movies", "film", "cinema", "action", "drama", "thriller", "hollywood", "bollywood"],
+    sports: ["sport", "sports", "football", "cricket", "wrestling", "tennis", "soccer", "nba", "ipl"],
+    comedy: ["comedy", "funny", "humor", "humour", "standup", "sitcom"],
+    history: ["history", "historical", "war", "ancient", "civilization"],
+    documentary: ["documentary", "doc", "docs", "nature", "wildlife"],
+    kids: ["kids", "kid", "children", "cartoon", "animation", "toons"],
+    music: ["music", "songs", "audio", "radio", "fm", "hits"],
+    news: ["news", "current affairs", "breaking", "today", "live news"],
+    entertainment: ["entertainment", "variety", "show", "reality", "serial"],
+    lifestyle: ["lifestyle", "style", "fashion", "food", "cooking"],
+    travel: ["travel", "tourism", "trip", "explore"],
+    business: ["business", "finance", "economy", "market", "stock", "money"],
+    science: ["science", "technology", "tech", "space", "discovery"],
+    education: ["education", "learning", "study", "knowledge", "tutorial"],
+    religion: ["religion", "devotional", "spiritual", "bhakti", "islam", "christian", "hindu"]
+  }
+}
+
+function inferCategoryBucket(channel) {
+  const aliases = getCategoryAliases()
+  const text = normalizeCategoryValue(`${channel?.category || ""} ${channel?.name || ""}`)
+
+  for (const [bucket, keys] of Object.entries(aliases)) {
+    if (keys.some(key => text.includes(key))) return bucket
+  }
+
+  const raw = normalizeCategoryValue(channel?.category || "")
+  if (raw && raw !== "general" && raw !== "other") return raw
+  return "general"
+}
+
+function categoryMatches(channelCategoryRaw, selectedRaw, channelNameRaw = "") {
+  if (!selectedRaw || selectedRaw === "all") return true
+  const aliases = getCategoryAliases()
+  const normalizedSelected = normalizeCategoryValue(selectedRaw)
+  const normalizedCategory = normalizeCategoryValue(channelCategoryRaw)
+  const normalizedName = normalizeCategoryValue(channelNameRaw)
+  const selectedAliases = aliases[normalizedSelected] || [normalizedSelected]
+
+  return selectedAliases.some(alias => normalizedCategory.includes(alias) || normalizedName.includes(alias))
+}
+
+function applyFilters() {
+  const qMain = String(mainSearch.value || "").trim().toLowerCase()
+  const qQuick = String(quickSearch.value || "").trim().toLowerCase()
+  const q = qQuick || qMain
+  const language = String(languageSelect.value || "all").toLowerCase()
+  const country = String(countrySelect.value || "all").toUpperCase()
+  const category = String(categorySelect.value || "all").toLowerCase()
+  const sourceType = String(sourceTypeSelect.value || "all").toLowerCase()
+
+  filteredChannels = channels.filter(ch => {
+    const chCategory = String(ch.derivedCategory || ch.category || "")
+    if (!categoryMatches(chCategory, category, ch.name)) return false
+    if (language !== "all" && String(ch.language || "").toLowerCase() !== language) return false
+    if (country !== "ALL" && String(ch.country || "").toUpperCase() !== country) return false
+    if (sourceType !== "all" && String(ch.source || "").toLowerCase() !== sourceType) return false
+
+    if (!q) return true
+    const hay = `${ch.name} ${ch.country} ${ch.language} ${ch.category} ${ch.source}`.toLowerCase()
+    return hay.includes(q)
+  })
+
+  filteredChannels.sort((a, b) => channelPriority(a) - channelPriority(b))
+  renderChannelCards(filteredChannels)
+  renderTrending(filteredChannels)
+
+  if (!filteredChannels.length) {
+    setStatus("No channels found with current filters")
+    nowPlayingEl.textContent = "Now Playing: none"
+    nowPlayingMetaEl.textContent = "Try another search/filter"
+    return
+  }
+
+  const active = filteredChannels.find(ch => getChannelKey(ch) === currentChannelKey)
+  if (!active) {
+    const preferred = filteredChannels.find(ch => channelPriority(ch) <= 1) || filteredChannels[0]
+    playChannel(preferred, { userInitiated: false })
+  } else {
+    setStatus(`Showing ${filteredChannels.length} channels`)
+  }
+}
+
+function quickSearchAndPlay() {
+  const q = String(mainSearch.value || quickSearch.value || "").trim().toLowerCase()
+  if (!q) return
+  const match = filteredChannels.find(ch => String(ch.name || "").toLowerCase().includes(q)) || channels.find(ch => String(ch.name || "").toLowerCase().includes(q))
+  if (!match) {
+    setStatus(`Channel not found: ${q}`)
+    return
+  }
+  playChannel(match, { userInitiated: true })
+}
+
+async function init() {
+  try {
+    const rawChannels = await fetchJson("/api/live-tv?limit=10000")
+    channels = rawChannels.map(ch => ({ ...ch, derivedCategory: inferCategoryBucket(ch) }))
+
+    const languages = [...new Set(channels.map(ch => String(ch.language || "en").toLowerCase()))].sort()
+    const categories = [...new Set(channels.map(ch => String(ch.derivedCategory || ch.category || "general").toLowerCase()))].sort()
+    const countries = [...new Set(channels.map(ch => String(ch.country || "GLOBAL").toUpperCase()))].sort()
+
+    fillSelect(languageSelect, languages, "All Languages")
+    fillSelect(countrySelect, countries, "All Countries")
+    fillSelect(categorySelect, [...new Set([...presetCategories, ...categories])].sort(), "All Categories")
+
+    applyFilters()
+    setStatus(`Loaded ${channels.length} channels`)
+  } catch (err) {
+    setStatus(`Unable to load live channels: ${err.message}`)
+  }
+}
+
+mainSearch.addEventListener("input", applyFilters)
+quickSearch.addEventListener("input", applyFilters)
+mainSearch.addEventListener("keydown", event => { if (event.key === "Enter") quickSearchAndPlay() })
+quickSearch.addEventListener("keydown", event => { if (event.key === "Enter") quickSearchAndPlay() })
+mainSearchBtn.addEventListener("click", quickSearchAndPlay)
+languageSelect.addEventListener("change", applyFilters)
+countrySelect.addEventListener("change", applyFilters)
+categorySelect.addEventListener("change", applyFilters)
+sourceTypeSelect.addEventListener("change", applyFilters)
+prevChannelBtn.addEventListener("click", () => playByOffset(-1))
+nextChannelBtn.addEventListener("click", () => playByOffset(1))
+fsPrevBtn.addEventListener("click", () => playByOffset(-1))
+fsNextBtn.addEventListener("click", () => playByOffset(1))
+toggleFullscreenBtn.addEventListener("click", togglePlayerFullscreen)
+playerStage.addEventListener("dblclick", event => {
+  if (event.target && event.target.closest && event.target.closest("button")) return
+  void togglePlayerFullscreen()
+})
+toggleAutoSkipBtn.addEventListener("click", () => {
+  autoSkipEnabled = !autoSkipEnabled
+  syncAutoSkipButtonState()
+  setStatus(autoSkipEnabled ? "Auto-skip enabled" : "Auto-skip disabled")
+})
+skipDelayChipEls.forEach(chip => {
+  chip.addEventListener("click", () => {
+    const nextDelay = Number(chip.dataset.skipDelay || 15000)
+    autoSkipStartTimeoutMs = nextDelay
+    syncSkipDelayChipState()
+    setStatus(`Auto-skip delay set to ${Math.round(nextDelay / 1000)}s`)
+  })
+})
+document.addEventListener("fullscreenchange", syncFullscreenButtonState)
+
+init()
+syncFullscreenButtonState()
+syncAutoSkipButtonState()
+syncSkipDelayChipState()
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
