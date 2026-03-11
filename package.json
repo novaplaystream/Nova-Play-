@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+ HEAD
 {
   "name": "novaplay",
   "version": "1.0.0",
@@ -19,7 +19,7 @@
 
 
 
-=======
+
 {
   "name": "novaplay",
   "version": "1.0.0",
@@ -40,4 +40,4 @@
 
 
 
->>>>>>> 9be762ea9cfd659c259b57b3a8d5ce9e5294ab04
+ 9be762ea9cfd659c259b57b3a8d5ce9e5294ab04
