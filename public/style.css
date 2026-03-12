@@ -672,8 +672,8 @@ opacity:.92;
 }
 
 .player-card {
-  flex: 2.2;
-  min-width: 56%;
+  flex: 3.0;
+  min-width: 62%;
   height:100%;
   overflow:hidden;
   display:flex;
@@ -682,10 +682,11 @@ opacity:.92;
 
 #playerStage {
   flex:1;
-  min-height: 520px;
-  max-height: calc(100% - 80px);
-  height: auto;
+  min-height: 72vh;
+  max-height: calc(100vh - 110px);
+  width:100%;
   margin-bottom: 10px;
+  background:#050a1e;
 }
 
 .player-controls-compact {
