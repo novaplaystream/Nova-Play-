@@ -1,110 +1,4 @@
 
-<!DOCTYPE html>
-<html>
-<head>
-<title>NovaPlay Live</title>
-<link rel="icon" type="image/svg+xml" href="/assets/novaplay-mark.svg">
-<link rel="shortcut icon" href="/assets/novaplay-mark.svg">
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700&family=Sora:wght@600&display=swap" rel="stylesheet">
-</head>
-<body class="home-body live16 live-premium">
-<header class="live-topbar">
-  <div class="brand">
-    <img class="brand-logo" src="/assets/novaplay-mark.svg" alt="NovaPlay">
-    <div class="brand-stack">
-      <div class="brand-title">NovaPlay</div>
-      <div class="brand-subtitle">Live Studio</div>
-    </div>
-  </div>
-  <nav class="live-nav">
-    <a href="/">Home</a>
-    <a class="active" href="/live.html">Live TV</a>
-  </nav>
-  <div class="live-datetime">Local time: <span id="localDateTime">--</span></div>
-</header>
-
-<div class="live-background-banner"></div>
-<div class="live-shell">
-  <aside class="live-sidebar">
-    <div class="sidebar-head">
-      <div>
-        <h3>Categories</h3>
-        <div class="sidebar-subtitle">Search & filter channels</div>
-      </div>
-      <div id="liveStatus" class="sidebar-status">Loading channels...</div>
-    </div>
-
-    <div class="sidebar-search">
-      <input id="quickSearch" placeholder="Search channel or keyword">
-      <button id="quickSearchBtn" type="button">Search</button>
-    </div>
-
-    <div class="sidebar-filters">
-      <label for="liveLanguage">Language</label>
-      <select id="liveLanguage"><option value="all">All Languages</option></select>
-      <label for="liveCountry">Country</label>
-      <select id="liveCountry"><option value="all">All Countries</option></select>
-      <label for="liveCategory">Category</label>
-      <select id="liveCategory"><option value="all">All Categories</option></select>
-      <label for="sourceType">Source</label>
-      <select id="sourceType">
-        <option value="all">All Sources</option>
-        <option value="youtube">YouTube</option>
-        <option value="youtubevideo">YouTube Video</option>
-        <option value="hls">HLS</option>
-      </select>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">Trending</div>
-      <div id="trendingStrip" class="trending-strip"></div>
-    </div>
-
-    <div class="sidebar-label">All Channels</div>
-    <div id="channelGrid" class="channel-list"></div>
-  </aside>
-
-  <main class="live-main">
-    <section class="live-player-card">
-      <div class="now-playing-card">
-        <div>
-          <div id="nowPlaying">Now Playing: none</div>
-          <div id="nowPlayingMeta">Choose a channel from the left panel</div>
-        </div>
-        <div class="player-status">
-          <span class="status-pill">LIVE</span>
-        </div>
-      </div>
-
-      <div id="playerStage" class="player-stage">
-        <div id="liveTag" class="live-tag"><img src="/assets/novaplay-mark.svg" alt="NovaPlay" class="live-logo"> LIVE</div>
-        <video id="livePlayer" controls autoplay playsinline></video>
-        <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        <audio id="dubAudio"></audio>
-        <div id="audioLangWrap" class="player-lang">
-          <label for="audioLangSelect">Audio</label>
-          <select id="audioLangSelect"></select>
-        </div>
-        <button id="fsPrevBtn" class="fs-nav fs-prev" type="button">Prev</button>
-        <button id="fsNextBtn" class="fs-nav fs-next" type="button">Next</button>
-      </div>
-
-      <div class="player-controls-compact">
-        <button id="toggleFullscreenBtn" type="button">Full Screen</button>
-        <button id="toggleAutoSkipBtn" type="button">Auto Skip: ON</button>
-        <div class="skip-delay">
-          <button class="skip-delay-chip" data-skip-delay="15000" type="button">15s</button>
-          <button class="skip-delay-chip" data-skip-delay="20000" type="button">20s</button>
-          <button class="skip-delay-chip" data-skip-delay="25000" type="button">25s</button>
-        </div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<script>
 const quickSearch = document.getElementById("quickSearch")
 const languageSelect = document.getElementById("liveLanguage")
 const countrySelect = document.getElementById("liveCountry")
@@ -221,15 +115,6 @@ function setStatus(message, options = {}) {
   lastStatusAt = now
 }
 
-window.addEventListener("error", event => {
-  const msg = event && event.message ? event.message : "Unknown error"
-  setStatus(`Live UI error: ${msg}`, { force: true })
-})
-
-window.addEventListener("unhandledrejection", event => {
-  const reason = event && event.reason ? (event.reason.message || String(event.reason)) : "Unknown rejection"
-  setStatus(`Live UI error: ${reason}`, { force: true })
-})
 async function fetchJson(url) {
   const res = await fetch(url)
   const data = await res.json().catch(() => ({}))
@@ -968,10 +853,7 @@ async function init() {
   resetAudioTracks()
   try {
     const rawChannels = await fetchJson("/api/live-tv?limit=10000")
-    const list = Array.isArray(rawChannels)
-      ? rawChannels
-      : (Array.isArray(rawChannels?.channels) ? rawChannels.channels : [])
-    channels = dedupeChannels(list).map(ch => ({ ...ch, derivedCategory: inferCategoryBucket(ch) }))
+    channels = dedupeChannels(rawChannels).map(ch => ({ ...ch, derivedCategory: inferCategoryBucket(ch) }))
 
     const languages = [...new Set(channels.map(ch => String(ch.language || "en").toLowerCase()))].sort()
     const categories = [...new Set(channels.map(ch => String(ch.derivedCategory || ch.category || "general").toLowerCase()))].sort()
@@ -1022,9 +904,7 @@ audioLangSelect.addEventListener("change", () => {
       playDubAudio(dubChannelId, lang)
     }
     return
-  }
-
-  // HLS/native audio track index selection
+  }// HLS/native audio track index selection
   const index = Number(selected)
   if (!Number.isNaN(index)) {
     stopDubAudio()
@@ -1060,111 +940,3 @@ setInterval(updateLocalDateTime, 1000)
 syncFullscreenButtonState()
 syncAutoSkipButtonState()
 syncSkipDelayChipState()
-</script>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
