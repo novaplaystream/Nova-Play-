@@ -344,6 +344,10 @@ opacity:.92;
   margin-bottom:12px;
 }
 
+.section.hidden {
+  display:none;
+}
+
 .section-head h2{
   margin:0;
   color:#ffffff;
@@ -631,6 +635,31 @@ opacity:.92;
   z-index:2;
 }
 
+.live-layout {
+  display:grid;
+  grid-template-columns: 1.3fr minmax(280px, 1fr);
+  gap: 20px;
+  padding: 16px 20px 22px;
+  align-items: start;
+  min-height: calc(100vh - 75px);
+  max-height: calc(100vh - 75px);
+  overflow: hidden;
+}
+
+.player-card,
+.list-panel {
+  height: calc(100vh - 130px);
+  overflow: hidden;
+}
+
+.list-panel {
+  background: rgba(7, 12, 25, 0.82);
+  border: 1px solid rgba(119, 180, 255, 0.20);
+  border-radius: 12px;
+  padding: 12px;
+  overflow: auto;
+}
+
 #playerStage,
 #livePlayer,
 #liveFrame {
@@ -712,7 +741,7 @@ transform:translateY(-1px);
 #playerStage{
 position:relative;
 width:100%;
-height:clamp(340px, 42vh, 560px);
+height:calc(100% - 20px);
 background:#0f1a35;
 border-radius:14px;
 overflow:hidden;
@@ -1051,16 +1080,23 @@ color:#c7d8f5;
 @media(max-width:1000px){
 
 .live-layout{
-grid-template-columns:1fr;
+  display:block;
+  min-height:auto;
+  max-height:none;
 }
 
-.list-panel{
-height:auto;
+.player-card,
+.list-panel {
+  height:auto;
+}
+
+.list-panel {
+  margin-top: 14px;
 }
 
 #playerStage{
-position:relative;
-height:clamp(300px, 60vh, 520px);
+  position:relative;
+  height:calc(55vh);
 }
 
 }

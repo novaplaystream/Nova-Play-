@@ -54,9 +54,43 @@ function renderCategoryMovies(categoryKey='all'){
   const moviesData = normalized === 'all' ? Object.values(data).flat() : (data[normalized] || [])
 
   categoryMovies.innerHTML = ''
-  moviesData.slice(0, 20).forEach(video => {
-    categoryMovies.innerHTML += createVideoCard(video)
-  })
+  if (!moviesData.length) {
+    categoryMovies.innerHTML = `<div class="empty-row">No videos found for ${categoryKey}</div>`
+  } else {
+    moviesData.slice(0, 20).forEach(video => {
+      categoryMovies.innerHTML += createVideoCard(video)
+    })
+  }
+
+  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'))
+  document.getElementById('categorySection').classList.remove('hidden')
+}
+
+function showCategoryByKey(key){
+  const sections = {
+    home: [],
+    movies: ['categorySection'],
+    music: ['categorySection'],
+    categories: ['categorySection'],
+    all: ['categorySection']
+  }
+
+  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'))
+
+  if (key === 'home') {
+    document.getElementById('trendingSection').classList.add('hidden')
+    return
+  }
+
+  if (key === 'movies' || key === 'music' || key === 'categories' || key === 'all') {
+    renderCategoryMovies(key === 'categories' ? 'all' : key)
+  }
+}
+
+function setNavActive(id){
+  document.querySelectorAll('.main-nav a').forEach(a => a.classList.remove('active'))
+  const el = document.getElementById(id)
+  if (el) el.classList.add('active')
 }
 
 function initSidebarAnchorActions(){
@@ -77,6 +111,27 @@ function initSidebarAnchorActions(){
   })
 }
 
+function setupHomepageNav(){
+  const options = [
+    {id:'navHome', key:'home'},
+    {id:'navMovies', key:'movies'},
+    {id:'navMusic', key:'music'},
+    {id:'navCategories', key:'all'}
+  ]
+  options.forEach(item => {
+    const el = document.getElementById(item.id)
+    if(!el) return
+    el.addEventListener('click', e=>{
+      e.preventDefault()
+      setNavActive(item.id)
+      if(item.key==='home'){
+        document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'))
+        return
+      }
+      showCategoryByKey(item.key)
+    })
+  })
+}
 async function rotateHeroBackground(){
   const hero = document.querySelector('.hero')
   if(!hero) return
@@ -109,7 +164,7 @@ async function rotateHeroBackground(){
   window.setInterval(setSlide, 5000)
 }
 
-function loadHomepage(){
+async function loadHomepage(){
   try{
     rotateHeroBackground()
     const res = await fetch('/api/videos')
@@ -189,6 +244,12 @@ function loadHomepage(){
     renderLanguageCountryChips(videos)
     renderContinueWatching()
     initSidebarAnchorActions()
+    setupHomepageNav()
+    // by default hide category section until user selects category
+    document.getElementById('categorySection')?.classList.add('hidden')
+    document.getElementById('trendingSection')?.classList.add('hidden')
+    document.getElementById('continueSection')?.classList.add('hidden')
+    document.getElementById('musicSection')?.classList.add('hidden')
   }catch(err){
     console.error('Homepage error:',err)
   }
