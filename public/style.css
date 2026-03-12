@@ -712,7 +712,7 @@ transform:translateY(-1px);
 #playerStage{
 position:relative;
 width:100%;
-height:clamp(520px, 68vh, 850px);
+height:clamp(340px, 42vh, 560px);
 background:#0f1a35;
 border-radius:14px;
 overflow:hidden;
@@ -740,20 +740,7 @@ z-index:6;
 }
 
 #playerStage::after {
-content: "NovaPlay";
-position:absolute;
-right:12px;
-bottom:12px;
-padding:4px 8px;
-font-size:11px;
-font-weight:700;
-color:#fff;
-background:rgba(1,6,17,.55);
-border:1px solid rgba(255,255,255,.2);
-border-radius:5px;
-backdrop-filter:blur(6px);
-letter-spacing:.04em;
-z-index:6;
+  display:none;
 }
 
 #livePlayer,
