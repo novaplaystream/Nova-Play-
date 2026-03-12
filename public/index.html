@@ -17,58 +17,103 @@
 
 <body>
 
-<header class="live-appbar">
-
-<div class="brand">
-<img src="/assets/novaplay-logo.svg">
-<span class="brand-title">NovaPlay</span>
-</div>
-
-  <div class="nav-links">
-<a href="/">Home</a>
-<a href="/live.html">Live TV</a>
-<a href="#">Movies</a>
-<a href="#">Music</a>
-<a id="adminLink" href="/admin.html" class="hidden">Admin</a>
-</div>
-<div class="datetime">Local time: <span id="localDateTime">--</span></div>
-<div class="search">  
-<input id="search" placeholder="Search videos">
-</div>
-
-<a href="/live.html" class="live-btn">Live TV</a>
-
+<header class="app-header">
+  <div class="header-left">
+    <a href="/" class="logo"><img src="/assets/novaplay-logo.svg" alt="NovaPlay"><span>NovaPlay</span></a>
+    <nav class="main-nav">
+      <a href="/" class="active">Home</a>
+      <a href="/live.html">Live TV</a>
+      <a href="#moviesSection">Movies</a>
+      <a href="#musicSection">Music</a>
+      <a href="#categorySection">Categories</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="search-group" id="searchSection">
+      <input id="search" placeholder="Search movies, shows, channels...">
+      <button id="btnSearch">🔎</button>
+    </div>
+    <a href="/login.html" class="cta-btn">Login</a>
+  </div>
 </header>
 
-
-<div class="layout">
-
-<aside class="sidebar">
-  <a href="#top" class="active" title="Home"><span>🏠</span><em>Home</em></a>
-  <a href="/live.html" title="Live TV"><span>📺</span><em>Live TV</em></a>
-  <a href="#moviesSection" title="Movies"><span>🎬</span><em>Movies</em></a>
-  <a href="#musicSection" title="Music"><span>🎵</span><em>Music</em></a>
-  <a href="#searchSection" title="Search"><span>🔍</span><em>Search</em></a>
-</aside>
-
-
-<main class="content">
-
-<section class="hero-hero">
-  <div class="hero-overlay"></div>
-  <div class="hero-content">
-    <div class="hero-title">Stream the Best Entertainment in India</div>
-    <div class="hero-subtitle">Movies, Music, Sports, TV Shows and 24x7 Live TV — All in one place.</div>
-    <div class="hero-feature">Next-level premium experience: 4K HDR, Dolby sound, and unlimited playlists.</div>
-    <div class="hero-actions">
-      <a href="/live.html" class="btn btn-primary">Live TV</a>
-      <a href="#trendingVideos" class="btn btn-secondary">Trending Movies</a>
+<main class="home-main" id="top">
+  <section class="hero"
+    style="background-image:url('https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=1800&q=80');">
+    <div class="hero-layer"></div>
+    <div class="hero-body">
+      <h1>Welcome to NovaPlay</h1>
+      <p>Experience premium streaming with curated recommendations, binge-worthy collections and live channels.</p>
+      <div class="hero-cta">
+        <a href="/live.html" class="btn btn-primary">Watch Live</a>
+        <a href="#trendingSection" class="btn btn-secondary">Explore Trending</a>
+      </div>
+      <div class="hero-tag">Next level: 4K HDR + Dolby Atmos + Auto category discovery</div>
     </div>
-    <div class="filter-chips">
-      <strong>Language:</strong> <span id="langChips"></span>
-      <strong>Country:</strong> <span id="countryChips"></span>
+  </section>
+
+  <section id="categorySection" class="section">
+    <div class="section-head">
+      <h2>Browse Categories</h2>
+      <p>Select your mood and discover top picks.</p>
     </div>
-  </div>
+    <div class="chips" id="categoryFilters"></div>
+  </section>
+
+  <section id="trendingSection" class="section">
+    <div class="section-head">
+      <h2>Trending Now</h2>
+      <p>Hot picks everyone is watching.</p>
+    </div>
+    <div class="row-wrapper">
+      <button class="row-btn prev">‹</button>
+      <div id="trendingVideos" class="row-scroll"></div>
+      <button class="row-btn next">›</button>
+    </div>
+  </section>
+
+  <section id="moviesSection" class="section">
+    <div class="section-head">
+      <h2>Movie Collection</h2>
+      <span id="categoryTitle">Category: All</span>
+    </div>
+    <div class="row-wrapper">
+      <button class="row-btn prev">‹</button>
+      <div id="categoryMovies" class="row-scroll"></div>
+      <button class="row-btn next">›</button>
+    </div>
+  </section>
+
+  <section id="continueSection" class="section">
+    <div class="section-head">
+      <h2>Continue Watching</h2>
+    </div>
+    <div class="row-wrapper">
+      <button class="row-btn prev">‹</button>
+      <div id="continueRow" class="row-scroll"></div>
+      <button class="row-btn next">›</button>
+    </div>
+  </section>
+
+  <section id="musicSection" class="section">
+    <div class="section-head">
+      <h2>Music & Shows</h2>
+    </div>
+    <div class="row-wrapper">
+      <button class="row-btn prev">‹</button>
+      <div id="musicRow" class="row-scroll"></div>
+      <button class="row-btn next">›</button>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p>NovaPlay © 2026 | Stream safely with your account</p>
+</footer>
+
+<script src="/script.js"></script>
+
+</body>
 </section>
 
 <section class="row hotstar-feature">

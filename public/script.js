@@ -77,8 +77,41 @@ function initSidebarAnchorActions(){
   })
 }
 
-async function loadHomepage(){
+async function rotateHeroBackground(){
+  const hero = document.querySelector('.hero')
+  if(!hero) return
+  const heroImages = [
+    'https://images.unsplash.com/photo-1517605196450-3ac39f5e6d5d?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1542206395-9feb3edaa68f?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1502920917128-1aa500764b2b?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1465101162946-4377e57745c3?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1511765224389-37f0e77cf0eb?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1497032205916-ac775f0649ae?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1485564389323-8bdfa0c8b4f9?auto=format&fit=crop&w=1600&q=80'
+  ]
+
+  let currentIndex = 0
+  const setSlide = () => {
+    const imageURL = heroImages[currentIndex]
+    hero.style.backgroundImage = `linear-gradient(145deg, rgba(14, 23, 48, 0.48), rgba(5, 10, 24, 0.75)), url('${imageURL}')`
+    currentIndex = (currentIndex + 1) % heroImages.length
+  }
+
+  setSlide()
+  window.setInterval(setSlide, 5000)
+}
+
+function loadHomepage(){
   try{
+    rotateHeroBackground()
     const res = await fetch('/api/videos')
     if (res.status === 401) {
       const categoryMovies = document.getElementById('categoryMovies')
