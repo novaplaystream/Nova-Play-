@@ -11,6 +11,7 @@ const fsSync = require("fs")
 const { getTrendingVideos } = require("./lib/trending")
 const mongoose = require("mongoose")
 const Video = require("./models/Video")
+const Channel = require("./models/Channel")
 const YOUTUBE_KEYS = [
   process.env.YOUTUBE_API_KEY,
   process.env.YOUTUBE_API_KEY2,
@@ -101,7 +102,7 @@ function makeDubSession(channelId, streamUrl, sourceLang) {
 
 function getLangState(session, lang) {
   if (!session.langState.has(lang)) {
-    session.langState.set(lang, { seq: 0, segments: [] })
+    session.langState.set(lang, { seq: 0, segments: [], lastSegmentAt: 0 })
   }
   return session.langState.get(lang)
 }
@@ -187,7 +188,10 @@ async function processChunk(session, chunkPath) {
       await fs.writeFile(outPath, audioBuf)
       await appendSegment(session, lang, fileName)
     } catch (err) {
-      console.warn("[LIVE_DUB] chunk process failed", err.message)
+      const message = err && err.message ? err.message : String(err || "unknown")
+      session.lastError = message
+      session.langErrors.set(lang, { message, at: Date.now() })
+      console.warn("[LIVE_DUB] chunk process failed", message)
     }
   }
 
@@ -615,28 +619,91 @@ function parseLiveTvLogo(channel) {
   return buildFaviconLogoFromWebsite(channel?.website)
 }
 
-function extractYouTubeVideoIdFromUrl(urlValue) {
-  const raw = String(urlValue || "")
-  if (!raw) return ""
+$0function parseCreatorVideoUrl(urlValue) {
+  const raw = String(urlValue || "").trim()
+  if (!raw) return { source: "", videoId: "", playbackUrl: "" }
+
+  const youtubeId = extractYouTubeVideoIdFromUrl(raw)
+  if (youtubeId) {
+    return { source: "youtube", videoId: youtubeId, playbackUrl: "" }
+  }
 
   try {
     const url = new URL(raw)
-    if (url.hostname.includes("youtu.be")) {
-      return url.pathname.replace(/^\//, "")
+    const host = String(url.hostname || "").toLowerCase()
+    const path = String(url.pathname || "")
+
+    if (host.includes("vimeo.com")) {
+      const match = path.match(/\/(\d+)/)
+      if (match) return { source: "vimeo", videoId: match[1], playbackUrl: "" }
     }
 
-    if (url.hostname.includes("youtube.com")) {
-      const v = url.searchParams.get("v")
-      if (v) return v
-      const parts = url.pathname.split("/").filter(Boolean)
-      if (parts[0] === "embed" && parts[1]) return parts[1]
-      if (parts[0] === "live" && parts[1]) return parts[1]
+    if (host.includes("dailymotion.com")) {
+      const match = path.match(/\/video\/([a-zA-Z0-9]+)/)
+      if (match) return { source: "dailymotion", videoId: match[1], playbackUrl: "" }
+    }
+
+    if (host === "dai.ly") {
+      const match = path.match(/\/([a-zA-Z0-9]+)/)
+      if (match) return { source: "dailymotion", videoId: match[1], playbackUrl: "" }
     }
   } catch {
-    return ""
+    // ignore
   }
 
-  return ""
+  const lower = raw.toLowerCase()
+  if (lower.includes(".m3u8") || lower.includes(".mp4") || lower.includes(".webm") || lower.includes(".mkv")) {
+    return { source: "local", videoId: "", playbackUrl: raw }
+  }
+
+  return { source: "", videoId: "", playbackUrl: "" }
+}
+
+async function getCreatorChannelByEmail(email) {
+  const ownerEmail = String(email || "").trim().toLowerCase()
+  if (!ownerEmail) return null
+  return Channel.findOne({ ownerEmail })
+}
+
+async function getCreatorChannelById(channelId) {
+  const id = String(channelId || "").trim()
+  if (!id) return null
+  return Channel.findOne({ channelId: id })
+}
+
+async function upsertCreatorChannel(email, name, description) {
+  const ownerEmail = String(email || "").trim().toLowerCase()
+  const channelName = String(name || "").trim()
+  const channelDesc = String(description || "").trim()
+  if (!ownerEmail || !channelName) return null
+
+  const now = nowIso()
+  const update = {
+    ownerEmail,
+    name: channelName,
+    description: channelDesc,
+    updatedAt: now
+  }
+
+  const existing = await Channel.findOne({ ownerEmail })
+  if (existing) {
+    existing.name = channelName
+    existing.description = channelDesc
+    existing.updatedAt = now
+    await existing.save()
+    return existing
+  }
+
+  const created = await Channel.create({
+    channelId: crypto.randomBytes(10).toString("hex"),
+    ownerEmail,
+    name: channelName,
+    description: channelDesc,
+    createdAt: now,
+    updatedAt: now
+  })
+
+  return created
 }
 
 function isYouTubeLikeId(value) {
@@ -2629,8 +2696,97 @@ function createApp() {
   })
 
   app.get("/api/me", (req, res) => {
-    res.json({ email: req.user?.email || "", isAdmin: adminEmail ? req.user?.email?.toLowerCase() === adminEmail : false })
+  res.json({ email: req.user?.email || "", isAdmin: adminEmail ? req.user?.email?.toLowerCase() === adminEmail : false })
+})
+
+app.get(
+  "/api/creator/channel",
+  asyncHandler(async (req, res) => {
+    const channel = await getCreatorChannelByEmail(req.user?.email || "")
+    res.json({ channel: channel || null })
   })
+)
+
+app.post(
+  "/api/creator/channel",
+  asyncHandler(async (req, res) => {
+    const name = normalizeString(req.body.name, "channel name", 80)
+    const description = typeof req.body.description === "string" ? req.body.description.trim().slice(0, 500) : ""
+    const channel = await upsertCreatorChannel(req.user?.email || "", name, description)
+    if (!channel) {
+      throw createHttpError(400, "Unable to create channel")
+    }
+    res.status(201).json({ channel })
+  })
+)
+
+app.get(
+  "/api/creator/videos",
+  asyncHandler(async (req, res) => {
+    const email = String(req.user?.email || "").toLowerCase()
+    const videos = await getVideos()
+    const mine = videos.filter(v => String(v.creatorEmail || "").toLowerCase() === email)
+    res.json(mine.map(v => ({ ...v, status: getVideoStatus(v), thumbnailUrl: getThumbnailUrl(v) })))
+  })
+)
+
+app.post(
+  "/api/creator/upload",
+  asyncHandler(async (req, res) => {
+    const email = String(req.user?.email || "").trim().toLowerCase()
+    const channel = await getCreatorChannelByEmail(email)
+    if (!channel) {
+      throw createHttpError(400, "Create your channel first")
+    }
+
+    const title = normalizeString(req.body.title, "title", 200)
+    const url = normalizeString(req.body.url, "video url", 1200)
+    const category = typeof req.body.category === "string" ? req.body.category.trim().slice(0, 60) : ""
+    const language = typeof req.body.language === "string" ? req.body.language.trim().slice(0, 40) : ""
+    const thumbnailUrl = typeof req.body.thumbnailUrl === "string" ? req.body.thumbnailUrl.trim().slice(0, 1200) : ""
+
+    const parsed = parseCreatorVideoUrl(url)
+    if (!parsed.videoId && !parsed.playbackUrl) {
+      throw createHttpError(400, "Unsupported video URL")
+    }
+
+    const videos = await getVideos()
+    const dedupeKey = parsed.videoId ? `${parsed.source}:${parsed.videoId}` : `direct:${parsed.playbackUrl}`
+    const exists = videos.find(v => {
+      if (parsed.videoId) return `${v.source}:${v.videoId}` === dedupeKey
+      return String(v.playbackUrl || "") === parsed.playbackUrl
+    })
+    if (exists) {
+      throw createHttpError(409, "Video already submitted")
+    }
+
+    const nextId = videos.reduce((max, v) => Math.max(max, Number(v.id) || 0), 0) + 1
+    const pending = toPendingVideo({
+      title,
+      videoId: parsed.videoId,
+      views: 0,
+      likes: 0,
+      source: parsed.source || "local",
+      thumbnailUrl,
+      playbackUrl: parsed.playbackUrl,
+      language,
+      category,
+      channelId: channel.channelId,
+      channelName: channel.name,
+      subscriberCount: 0
+    })
+
+    pending.id = nextId
+    pending.creatorEmail = email
+    pending.creatorChannelId = channel.channelId
+    pending.creatorChannelName = channel.name
+    pending.moderationStatus = "creator_pending"
+    pending.moderationReason = "creator-upload"
+
+    await saveVideos([...videos, pending])
+    res.status(201).json(pending)
+  })
+)  })
 
   app.use(express.static("public"))
 
@@ -2712,15 +2868,34 @@ function createApp() {
       res.json(publicVideos)
     })
   )
-
   app.get(
-    "/api/videos/trending",
-    asyncHandler(async (req, res) => {
-      const [videos, comments] = await Promise.all([getVideos(), getComments()])
-      const publicVideos = videos.filter(v => v.approved && v.homepage && !v.rejected && isPlayableVideo(v))
-      res.json(getTrendingVideos(publicVideos, comments))
+  "/api/channel/:id",
+  asyncHandler(async (req, res) => {
+    const channel = await getCreatorChannelById(req.params.id)
+    if (!channel) {
+      throw createHttpError(404, "Channel not found")
+    }
+    res.json({
+      channelId: channel.channelId,
+      name: channel.name,
+      description: channel.description || "",
+      createdAt: channel.createdAt
     })
-  )
+  })
+)
+
+app.get(
+  "/api/channel/:id/videos",
+  asyncHandler(async (req, res) => {
+    const channel = await getCreatorChannelById(req.params.id)
+    if (!channel) {
+      throw createHttpError(404, "Channel not found")
+    }
+    const videos = await getVideos()
+    const list = videos.filter(v => String(v.channelId || "") === channel.channelId && v.approved && !v.rejected && isPlayableVideo(v))
+    res.json(list.map(v => ({ ...v, thumbnailUrl: getThumbnailUrl(v) })))
+  })
+)
 
   app.get(
     "/api/categories",
@@ -2752,7 +2927,41 @@ function createApp() {
 
   app.get("/api/live-dub/status", (req, res) => {
     const channelId = typeof req.query.channelId === "string" ? req.query.channelId.trim() : ""
-    res.json({ enabled: LIVE_DUBBING_ENABLED, provider: LIVE_DUBBING_PROVIDER, languages: LIVE_DUBBING_LANGS, credentialsConfigured: LIVE_DUBBING_HAS_CREDS, availableLanguages: channelId ? getAvailableDubLanguages(channelId) : [] })
+    const lang = typeof req.query.lang === "string" ? req.query.lang.trim().toLowerCase() : ""
+    const session = channelId ? liveDubSessions.get(channelId) : null
+    let langStatus = null
+    if (session && lang) {
+      const state = session.langState.get(lang) || { segments: [], lastSegmentAt: 0 }
+      const errorInfo = session.langErrors ? session.langErrors.get(lang) : null
+      let status = "starting"
+      if (state.segments.length > 0) {
+        status = "ready"
+      } else if (errorInfo) {
+        status = "error"
+      } else if (session.lastChunkAt) {
+        status = "in-progress"
+      }
+      langStatus = {
+        lang,
+        status,
+        segments: state.segments.length,
+        lastSegmentAt: state.lastSegmentAt || 0,
+        lastError: errorInfo ? errorInfo.message : ""
+      }
+    }
+
+    res.json({
+      enabled: LIVE_DUBBING_ENABLED,
+      provider: LIVE_DUBBING_PROVIDER,
+      languages: LIVE_DUBBING_LANGS,
+      credentialsConfigured: LIVE_DUBBING_HAS_CREDS,
+      availableLanguages: channelId ? getAvailableDubLanguages(channelId) : [],
+      sessionActive: Boolean(session),
+      sessionStartedAt: session ? session.createdAt : 0,
+      lastChunkAt: session ? session.lastChunkAt : 0,
+      lastError: session ? session.lastError : "",
+      langStatus
+    })
   })
 
   app.post(
@@ -3518,6 +3727,13 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
+
+
+
+
+
+
 
 
 

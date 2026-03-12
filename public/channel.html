@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NovaPlay Channel</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/novaplay-mark.svg">
+  <link rel="shortcut icon" href="/assets/novaplay-mark.svg">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .channel-shell { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .channel-hero { background: rgba(12, 20, 40, 0.9); border: 1px solid rgba(95, 165, 255, 0.2); border-radius: 18px; padding: 18px; margin-bottom: 20px; }
+    .channel-hero h2 { margin: 0 0 6px; }
+    .channel-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  </style>
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <div class="logo"><img src="/assets/novaplay-logo.svg" alt="NovaPlay" style="height:34px;width:auto"></div>
+    <div class="admin-header-right">
+      <a href="/" class="admin-btn ghost">Home</a>
+      <a href="/creator.html" class="admin-btn ghost">Creator Studio</a>
+    </div>
+  </header>
+
+  <main class="channel-shell">
+    <section class="channel-hero" id="channelHero">
+      <h2 id="channelName">Loading channel...</h2>
+      <p id="channelDesc" class="muted"></p>
+      <div class="channel-actions">
+        <a href="/login.html" class="admin-btn">Login to Watch</a>
+      </div>
+    </section>
+
+    <section>
+      <h3>Videos</h3>
+      <div id="channelVideos" class="video-grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search)
+    const channelId = String(params.get("id") || "").trim()
+    const channelNameEl = document.getElementById("channelName")
+    const channelDescEl = document.getElementById("channelDesc")
+    const channelVideosEl = document.getElementById("channelVideos")
+
+    async function apiFetch(url) {
+      const res = await fetch(url)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed")
+      }
+      return data
+    }
+
+    function buildVideoCard(video) {
+      const card = document.createElement("div")
+      card.className = "video-card"
+
+      const thumb = document.createElement("div")
+      thumb.className = "video-thumb"
+      if (video.thumbnailUrl) {
+        thumb.style.backgroundImage = `url('${video.thumbnailUrl}')`
+      }
+
+      const body = document.createElement("div")
+      body.className = "video-body"
+
+      const title = document.createElement("h4")
+      title.textContent = video.title || "Untitled"
+
+      const meta = document.createElement("div")
+      meta.className = "video-meta"
+      meta.textContent = [video.category, video.language].filter(Boolean).join(" · ")
+
+      const action = document.createElement("button")
+      action.className = "video-btn"
+      action.type = "button"
+      action.textContent = "Watch"
+      action.addEventListener("click", () => {
+        const id = String(video.id || "").trim()
+        if (!id) return
+        window.location.href = `/watch.html?id=${encodeURIComponent(id)}`
+      })
+
+      body.appendChild(title)
+      body.appendChild(meta)
+      body.appendChild(action)
+
+      card.appendChild(thumb)
+      card.appendChild(body)
+      return card
+    }
+
+    async function init() {
+      if (!channelId) {
+        channelNameEl.textContent = "Channel not found"
+        return
+      }
+
+      try {
+        const channel = await apiFetch(`/api/channel/${encodeURIComponent(channelId)}`)
+        channelNameEl.textContent = channel.name || "NovaPlay Channel"
+        channelDescEl.textContent = channel.description || ""
+      } catch (err) {
+        channelNameEl.textContent = err.message
+        return
+      }
+
+      try {
+        const videos = await apiFetch(`/api/channel/${encodeURIComponent(channelId)}/videos`)
+        channelVideosEl.innerHTML = ""
+        if (!Array.isArray(videos) || videos.length === 0) {
+          channelVideosEl.innerHTML = "<div class='muted'>No approved videos yet.</div>"
+          return
+        }
+        videos.forEach(video => channelVideosEl.appendChild(buildVideoCard(video)))
+      } catch (err) {
+        channelVideosEl.innerHTML = `<div class='muted'>${err.message}</div>`
+      }
+    }
+
+    init()
+  </script>
+</body>
+</html>

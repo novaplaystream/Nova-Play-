@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NovaPlay Creator Studio</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/novaplay-mark.svg">
+  <link rel="shortcut icon" href="/assets/novaplay-mark.svg">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .creator-shell { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .creator-card { background: rgba(12, 20, 40, 0.9); border: 1px solid rgba(95, 165, 255, 0.2); border-radius: 16px; padding: 16px; }
+    .creator-card h3 { margin-top: 0; }
+    .creator-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .creator-row input, .creator-row textarea, .creator-row select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(7, 12, 28, 0.85); color: #eaf2ff; }
+    .creator-row textarea { min-height: 90px; resize: vertical; }
+    .creator-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .creator-status { margin-top: 10px; font-size: 13px; color: #9be29b; }
+    .creator-status.error { color: #ff8a80; }
+    .creator-videos { margin-top: 18px; }
+    .creator-videos .video-card { cursor: default; }
+    .creator-videos .video-btn { cursor: pointer; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .status-pending { background: rgba(255, 200, 90, 0.2); color: #ffd37a; border: 1px solid rgba(255, 200, 90, 0.3); }
+    .status-approved { background: rgba(100, 220, 150, 0.2); color: #8fe8b5; border: 1px solid rgba(100, 220, 150, 0.3); }
+    .status-rejected { background: rgba(255, 110, 110, 0.2); color: #ff9f9f; border: 1px solid rgba(255, 110, 110, 0.3); }
+  </style>
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <div class="logo"><img src="/assets/novaplay-logo.svg" alt="NovaPlay" style="height:34px;width:auto"></div>
+    <div class="admin-header-right">
+      <a href="/" class="admin-btn ghost">Home</a>
+      <a href="/logout" class="admin-btn ghost">Logout</a>
+    </div>
+  </header>
+
+  <main class="creator-shell">
+    <h2>Creator Studio</h2>
+    <p class="muted">Apna channel banaiye, video submit kijiye. Admin approve karega tabhi aapke channel par dikhega.</p>
+
+    <div class="creator-grid">
+      <section class="creator-card" id="channelCard">
+        <h3>Channel Setup</h3>
+        <div id="channelDetails" class="muted">Loading channel...</div>
+        <div class="creator-row" id="channelForm">
+          <input id="channelName" placeholder="Channel name">
+          <textarea id="channelDesc" placeholder="Channel description (optional)"></textarea>
+          <div class="creator-actions">
+            <button id="saveChannelBtn" class="admin-btn">Save Channel</button>
+            <a id="publicChannelLink" class="admin-btn ghost" href="#" target="_blank" rel="noreferrer" style="display:none;">Open Public Channel</a>
+          </div>
+          <div id="channelStatus" class="creator-status"></div>
+        </div>
+      </section>
+
+      <section class="creator-card" id="uploadCard">
+        <h3>Upload / Submit Video</h3>
+        <div class="creator-row">
+          <input id="videoTitle" placeholder="Video title">
+          <input id="videoUrl" placeholder="Video URL (YouTube/Vimeo/Dailymotion/MP4 link)">
+          <input id="videoThumb" placeholder="Thumbnail URL (optional)">
+          <input id="videoCategory" placeholder="Category (example: music, movies)">
+          <input id="videoLanguage" placeholder="Language (example: hi, en)">
+          <div class="creator-actions">
+            <button id="submitVideoBtn" class="admin-btn">Submit For Approval</button>
+          </div>
+          <div id="uploadStatus" class="creator-status"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="creator-videos">
+      <h3>My Videos</h3>
+      <div id="myVideos" class="video-grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const channelDetails = document.getElementById("channelDetails")
+    const channelForm = document.getElementById("channelForm")
+    const channelName = document.getElementById("channelName")
+    const channelDesc = document.getElementById("channelDesc")
+    const saveChannelBtn = document.getElementById("saveChannelBtn")
+    const channelStatus = document.getElementById("channelStatus")
+    const publicChannelLink = document.getElementById("publicChannelLink")
+
+    const submitVideoBtn = document.getElementById("submitVideoBtn")
+    const videoTitle = document.getElementById("videoTitle")
+    const videoUrl = document.getElementById("videoUrl")
+    const videoThumb = document.getElementById("videoThumb")
+    const videoCategory = document.getElementById("videoCategory")
+    const videoLanguage = document.getElementById("videoLanguage")
+    const uploadStatus = document.getElementById("uploadStatus")
+    const myVideos = document.getElementById("myVideos")
+
+    let currentChannel = null
+
+    function setStatus(el, msg, isError) {
+      el.textContent = msg || ""
+      el.classList.toggle("error", Boolean(isError))
+    }
+
+    async function apiFetch(url, options = {}) {
+      const res = await fetch(url, options)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed")
+      }
+      return data
+    }
+
+    async function loadChannel() {
+      try {
+        const data = await apiFetch("/api/creator/channel")
+        currentChannel = data.channel
+        if (currentChannel) {
+          channelDetails.innerHTML = `<strong>${currentChannel.name}</strong><br>${currentChannel.description || ""}`
+          channelName.value = currentChannel.name || ""
+          channelDesc.value = currentChannel.description || ""
+          publicChannelLink.href = `/channel.html?id=${encodeURIComponent(currentChannel.channelId)}`
+          publicChannelLink.style.display = "inline-flex"
+          setStatus(channelStatus, "Channel ready", false)
+        } else {
+          channelDetails.textContent = "No channel yet. Create your channel below."
+          publicChannelLink.style.display = "none"
+        }
+      } catch (err) {
+        channelDetails.textContent = "Unable to load channel"
+        setStatus(channelStatus, err.message, true)
+      }
+    }
+
+    async function saveChannel() {
+      try {
+        setStatus(channelStatus, "Saving...", false)
+        const payload = {
+          name: channelName.value,
+          description: channelDesc.value
+        }
+        const data = await apiFetch("/api/creator/channel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+        currentChannel = data.channel
+        await loadChannel()
+        setStatus(channelStatus, "Channel saved", false)
+      } catch (err) {
+        setStatus(channelStatus, err.message, true)
+      }
+    }
+
+    function renderStatus(status) {
+      const span = document.createElement("span")
+      span.className = "status-pill"
+      if (status === "approved") span.classList.add("status-approved")
+      if (status === "pending") span.classList.add("status-pending")
+      if (status === "rejected") span.classList.add("status-rejected")
+      span.textContent = status
+      return span
+    }
+
+    function buildVideoCard(video) {
+      const card = document.createElement("div")
+      card.className = "video-card"
+
+      const thumb = document.createElement("div")
+      thumb.className = "video-thumb"
+      if (video.thumbnailUrl) {
+        thumb.style.backgroundImage = `url('${video.thumbnailUrl}')`
+      }
+
+      const body = document.createElement("div")
+      body.className = "video-body"
+
+      const title = document.createElement("h4")
+      title.textContent = video.title || "Untitled"
+
+      const meta = document.createElement("div")
+      meta.className = "video-meta"
+      meta.textContent = [video.category, video.language].filter(Boolean).join(" · ")
+
+      const statusWrap = document.createElement("div")
+      statusWrap.appendChild(renderStatus(video.status || "pending"))
+
+      body.appendChild(title)
+      body.appendChild(meta)
+      body.appendChild(statusWrap)
+
+      card.appendChild(thumb)
+      card.appendChild(body)
+      return card
+    }
+
+    async function loadMyVideos() {
+      try {
+        const list = await apiFetch("/api/creator/videos")
+        myVideos.innerHTML = ""
+        if (!Array.isArray(list) || list.length === 0) {
+          myVideos.innerHTML = "<div class='muted'>No videos yet.</div>"
+          return
+        }
+        list.forEach(video => myVideos.appendChild(buildVideoCard(video)))
+      } catch (err) {
+        myVideos.innerHTML = `<div class='muted'>${err.message}</div>`
+      }
+    }
+
+    async function submitVideo() {
+      try {
+        if (!currentChannel) {
+          setStatus(uploadStatus, "Create your channel first", true)
+          return
+        }
+        setStatus(uploadStatus, "Submitting...", false)
+        const payload = {
+          title: videoTitle.value,
+          url: videoUrl.value,
+          thumbnailUrl: videoThumb.value,
+          category: videoCategory.value,
+          language: videoLanguage.value
+        }
+        await apiFetch("/api/creator/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+        videoTitle.value = ""
+        videoUrl.value = ""
+        videoThumb.value = ""
+        setStatus(uploadStatus, "Submitted for approval", false)
+        await loadMyVideos()
+      } catch (err) {
+        setStatus(uploadStatus, err.message, true)
+      }
+    }
+
+    saveChannelBtn.addEventListener("click", saveChannel)
+    submitVideoBtn.addEventListener("click", submitVideo)
+
+    loadChannel().then(loadMyVideos)
+  </script>
+</body>
+</html>

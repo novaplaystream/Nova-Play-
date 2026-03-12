@@ -154,6 +154,7 @@ function updateLocalDateTime() {
 let channels = []
 let filteredChannels = []
 let currentChannelKey = ""
+let currentChannel = null
 let hls
 let hlsLoaderPromise = null
 let hlsPlaybackTimeout = null
@@ -171,6 +172,11 @@ let dubEnabled = false
 let dubAvailableLangs = []
 let dubHls = null
 let dubChannelId = ""
+const DUB_POLL_INTERVAL_MS = 2000
+const DUB_POLL_TIMEOUT_MS = 30000
+let dubPollTimer = null
+let dubPollToken = 0
+let dubRequestedLang = ""
 
 function dedupeChannels(list) {
   const seen = new Set()
@@ -325,6 +331,7 @@ function destroyPlayback() {
   frameEl.style.display = "none"
   resetAudioTracks()
   stopDubAudio()
+  clearDubPoll()
 }
 
 function resetAudioTracks() {
@@ -449,6 +456,97 @@ function stopDubAudio() {
   dubAudioEl.removeAttribute("src")
   dubAudioEl.load()
   videoEl.muted = false
+}
+
+function clearDubPoll() {
+  if (dubPollTimer) {
+    clearInterval(dubPollTimer)
+    dubPollTimer = null
+  }
+  dubRequestedLang = ""
+  dubPollToken += 1
+}
+
+function fallbackToOriginal(reason) {
+  clearDubPoll()
+  stopDubAudio()
+  if (hls && window.Hls && window.Hls.isSupported()) {
+    if (hls.audioTracks && hls.audioTracks.length > 0) {
+      hls.audioTrack = 0
+    }
+  } else if (videoEl && videoEl.audioTracks) {
+    Array.from(videoEl.audioTracks).forEach((track, idx) => { track.enabled = idx === 0 })
+  }
+  audioLangSelect.value = "original"
+  videoEl.muted = false
+  if (reason) setStatus(reason, { force: true })
+}
+
+async function requestDubForLanguage(lang) {
+  if (!lang) return
+  if (!currentChannel || !dubChannelId || !currentChannel.streamUrl) {
+    fallbackToOriginal("Dub unavailable: channel info missing")
+    return
+  }
+
+  clearDubPoll()
+  const token = ++dubPollToken
+  dubRequestedLang = lang
+  setStatus(`Dubbing started (${lang.toUpperCase()})...`, { force: true })
+
+  fetch("/api/live-dub/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      channelId: dubChannelId,
+      streamUrl: currentChannel.streamUrl,
+      sourceLang: currentChannel.language,
+      name: currentChannel.name
+    })
+  }).catch(() => {})
+
+  const startAt = Date.now()
+  const pollOnce = async () => {
+    if (token !== dubPollToken) return
+    if (audioLangSelect.value !== `dub:${lang}`) {
+      clearDubPoll()
+      return
+    }
+    try {
+      const res = await fetch(`/api/live-dub/status?channelId=${encodeURIComponent(dubChannelId)}&lang=${encodeURIComponent(lang)}`)
+      const data = await res.json().catch(() => null)
+      if (!data || !data.enabled || !data.credentialsConfigured) {
+        fallbackToOriginal("Dub disabled or credentials missing. Switching to original.")
+        return
+      }
+      const available = Array.isArray(data.availableLanguages) ? data.availableLanguages : []
+      const langStatus = data.langStatus || null
+      if (available.includes(lang) || (langStatus && langStatus.status === "ready")) {
+        clearDubPoll()
+        playDubAudio(dubChannelId, lang)
+        setStatus(`Dubbing ready (${lang.toUpperCase()})`, { force: true })
+        return
+      }
+      if (langStatus && langStatus.status === "error") {
+        const errMsg = langStatus.lastError ? ` (${langStatus.lastError})` : ""
+        fallbackToOriginal(`Dubbing failed${errMsg}. Switching to original.`)
+        return
+      }
+      if (Date.now() - startAt > DUB_POLL_TIMEOUT_MS) {
+        fallbackToOriginal("Dubbing timeout. Switching to original.")
+        return
+      }
+      setStatus(`Dubbing in progress (${lang.toUpperCase()})...`)
+    } catch {
+      if (Date.now() - startAt > DUB_POLL_TIMEOUT_MS) {
+        fallbackToOriginal("Dubbing timeout. Switching to original.")
+      }
+    }
+  }
+
+  await pollOnce()
+  if (dubPollToken !== token) return
+  dubPollTimer = setInterval(pollOnce, DUB_POLL_INTERVAL_MS)
 }
 
 function playDubAudio(channelId, lang) {
@@ -818,6 +916,7 @@ async function playChannel(channel, options = {}) {
   const userInitiated = options.userInitiated === true
 
   currentChannelKey = channelKey
+  currentChannel = channel
   destroyPlayback()
   if (dubChannelId) {
     fetch("/api/live-dub/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channelId: dubChannelId }) }).catch(() => {})
@@ -1004,6 +1103,7 @@ audioLangSelect.addEventListener("change", () => {
   const selected = String(audioLangSelect.value || "original")
 
   if (!selected || selected === "original") {
+    clearDubPoll()
     stopDubAudio()
     if (hls && window.Hls && window.Hls.isSupported()) {
       if (hls.audioTracks && hls.audioTracks.length > 0) {
@@ -1019,14 +1119,17 @@ audioLangSelect.addEventListener("change", () => {
   if (selected.startsWith("dub:")) {
     const lang = selected.slice(4)
     if (lang) {
-      playDubAudio(dubChannelId, lang)
+      requestDubForLanguage(lang)
     }
+    return
+  }
     return
   }
 
   // HLS/native audio track index selection
   const index = Number(selected)
   if (!Number.isNaN(index)) {
+    clearDubPoll()
     stopDubAudio()
     if (hls && window.Hls && window.Hls.isSupported()) {
       hls.audioTrack = index
@@ -1063,6 +1166,28 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

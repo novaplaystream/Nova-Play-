@@ -130,10 +130,16 @@ async function loadTrendingBoxes() {
     if (titleEl) titleEl.textContent = title
     if (thumbEl && thumb) thumbEl.style.backgroundImage = `url('${thumb}')`
     if (id) {
+      const watchTarget = `/watch.html?id=${encodeURIComponent(id)}&fs=1`
       box.style.cursor = "pointer"
       box.addEventListener("click", () => {
-        location.href = `/watch.html?id=${encodeURIComponent(id)}&fs=1`
+        if (!authState.isLoggedIn) {
+          redirectToLogin(watchTarget)
+          return
+        }
+        location.href = watchTarget
       })
+      attachLoginGate(box, watchTarget)
     }
   })
 }
@@ -224,13 +230,33 @@ function buildVideoCard(video) {
 
   const id = String(video.id || video._id || "").trim()
   if (id) {
-    card.addEventListener("click", () => {
-      location.href = `/watch.html?id=${encodeURIComponent(id)}`
-    })
+    const watchTarget = `/watch.html?id=${encodeURIComponent(id)}`
+    card.addEventListener(
+      "click",
+      event => {
+        if (!authState.isLoggedIn) {
+          event.preventDefault()
+          event.stopPropagation()
+          redirectToLogin(watchTarget)
+          return
+        }
+        location.href = watchTarget
+      },
+      true
+    )
     action.addEventListener("click", event => {
       event.stopPropagation()
-      location.href = `/watch.html?id=${encodeURIComponent(id)}`
+      if (!authState.isLoggedIn) {
+        redirectToLogin(watchTarget)
+        return
+      }
+      location.href = watchTarget
     })
+    if (!authState.isLoggedIn) {
+      action.textContent = "Login to Watch"
+      card.classList.add("login-gated")
+      action.classList.add("login-gated")
+    }
   } else {
     action.disabled = true
     action.textContent = "Unavailable"
@@ -362,14 +388,30 @@ function setupLibraryNav() {
   }
 }
 
+async function initHome() {
+  await fetchAuthState()
+  applyAuthStateToPage()
+  setupLibraryNav()
+  loadTrendingBoxes()
+  loadLibraryVideos()
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   if (document.body.dataset.page === "home") {
-    setupLibraryNav()
-    loadTrendingBoxes()
-    loadLibraryVideos()
+    initHome().catch(() => {
+      setupLibraryNav()
+      loadTrendingBoxes()
+      loadLibraryVideos()
+    })
   }
   revealAdminLink()
 })
+
+
+
+
+
+
 
 
 
