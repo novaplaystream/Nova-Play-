@@ -661,7 +661,7 @@ function syncSkipDelayChipState() {
 }
 
 async function playYouTube(videoId, channel) {
-  frameEl.src = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1`
+  frameEl.src = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`
   frameEl.style.display = "block"
   nowPlayingEl.textContent = `Now Playing: ${channel.name}`
   nowPlayingMetaEl.textContent = formatMeta(channel)
@@ -752,7 +752,16 @@ async function playHls(channel, options = {}) {
     }
   }, autoSkipStartTimeoutMs)
 
-  videoEl.play().catch(() => setStatus("Player par click karke stream start karein"))
+  videoEl.play().catch(async () => {
+  // Autoplay may be blocked after async ops. Retry muted, then prompt to unmute.
+  videoEl.muted = true
+  try {
+    await videoEl.play()
+    setStatus("Click player to enable audio")
+  } catch {
+    setStatus("Player par click karke stream start karein")
+  }
+})
   nowPlayingEl.textContent = `Now Playing: ${channel.name}`
   nowPlayingMetaEl.textContent = formatMeta(channel)
   setStatus(`Playing ${channel.name}`)
@@ -777,7 +786,7 @@ async function playChannel(channel, options = {}) {
   nextAttempts.add(channelKey)
 
   if (channel.source === "youtube" && channel.channelId) {
-    frameEl.src = `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channel.channelId)}&autoplay=1`
+    frameEl.src = `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channel.channelId)}&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`
     frameEl.style.display = "block"
     nowPlayingEl.textContent = `Now Playing: ${channel.name}`
     nowPlayingMetaEl.textContent = formatMeta(channel)
@@ -1002,6 +1011,8 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
 
 
 

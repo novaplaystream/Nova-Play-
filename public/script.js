@@ -229,6 +229,27 @@ function setupMiniPlayer(videos){
   window.setInterval(render, 12000)
 }
 
+function renderBackdropWall(videos){
+  const wall = document.getElementById("wallGrid")
+  if (!wall || !Array.isArray(videos)) return
+  wall.innerHTML = ""
+  const picks = videos.filter(v => v && (v.thumbnailUrl || v.thumbnail)).slice(0, 15)
+  picks.forEach(video => {
+    const id = String(video.id || video._id || "").trim()
+    const tile = document.createElement("div")
+    tile.className = "wall-tile"
+    const thumb = video.thumbnailUrl || video.thumbnail || ""
+    if (thumb) tile.style.backgroundImage = `url('${thumb}')`
+    tile.title = video.title || "Open"
+    if (id) {
+      tile.addEventListener("click", () => {
+        location.href = `/watch.html?id=${encodeURIComponent(id)}&fs=1`
+      })
+    }
+    wall.appendChild(tile)
+  })
+}
+
 async function loadHomepage(){
   try{
     rotateHeroBackground()
@@ -306,6 +327,7 @@ async function loadHomepage(){
     }
 
     setupMiniPlayer(videos)
+    renderBackdropWall(videos)
     renderCategoryMovies('all')
     renderLanguageCountryChips(videos)
     renderContinueWatching()
@@ -566,6 +588,10 @@ behavior: "smooth"
 })
 
 }
+
+
+
+
 
 
 
