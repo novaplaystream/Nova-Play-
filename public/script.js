@@ -164,6 +164,71 @@ async function rotateHeroBackground(){
   window.setInterval(setSlide, 5000)
 }
 
+function isYouTubeStyleId(value){ return /^[A-Za-z0-9_-]{11}$/.test(String(value || "")) }
+
+function createMiniPoster(container, video){
+  const poster = document.createElement("div")
+  poster.className = "mini-poster"
+  const thumb = video.thumbnailUrl || video.thumbnail || ""
+  if (thumb) poster.style.backgroundImage = `url('${thumb}')`
+  container.appendChild(poster)
+}
+
+function renderMiniPlayerVideo(container, video){
+  container.innerHTML = ""
+  const videoId = String(video.videoId || "").trim()
+  if (isYouTubeStyleId(videoId)) {
+    const iframe = document.createElement("iframe")
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}`
+    iframe.setAttribute("allow", "autoplay; fullscreen")
+    iframe.allowFullscreen = true
+    container.appendChild(iframe)
+    return true
+  }
+
+  const playback = String(video.playbackUrl || "").trim()
+  if (playback && /\.(mp4|webm|ogg|m4v)(\?.*)?$/i.test(playback)) {
+    const vid = document.createElement("video")
+    vid.muted = true
+    vid.autoplay = true
+    vid.loop = true
+    vid.playsInline = true
+    vid.src = playback
+    vid.addEventListener("error", () => {
+      container.innerHTML = ""
+      createMiniPoster(container, video)
+    })
+    container.appendChild(vid)
+    return true
+  }
+
+  createMiniPoster(container, video)
+  return false
+}
+
+function setupMiniPlayer(videos){
+  const container = document.getElementById("miniPlayer")
+  const titleEl = document.getElementById("miniTitle")
+  const playBtn = document.getElementById("miniPlayBtn")
+  if (!container || !Array.isArray(videos) || videos.length === 0) return
+
+  const pool = videos.filter(v => v && (v.videoId || v.playbackUrl || v.thumbnailUrl || v.thumbnail))
+  if (!pool.length) return
+
+  let index = Math.floor(Math.random() * pool.length)
+  const render = () => {
+    const video = pool[index % pool.length]
+    const id = String(video.id || video._id || "").trim()
+    if (titleEl) titleEl.textContent = video.title || "Now Playing"
+    if (playBtn) playBtn.href = id ? `/watch.html?id=${encodeURIComponent(id)}&fs=1` : "#"
+    renderMiniPlayerVideo(container, video)
+    index = (index + 1) % pool.length
+  }
+
+  render()
+  window.setInterval(render, 12000)
+}
+
 async function loadHomepage(){
   try{
     rotateHeroBackground()
@@ -240,6 +305,7 @@ async function loadHomepage(){
       })
     }
 
+    setupMiniPlayer(videos)
     renderCategoryMovies('all')
     renderLanguageCountryChips(videos)
     renderContinueWatching()
@@ -500,6 +566,8 @@ behavior: "smooth"
 })
 
 }
+
+
 
 
 
