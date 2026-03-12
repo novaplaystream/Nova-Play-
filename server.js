@@ -7,6 +7,7 @@ const crypto = require("crypto")
 const dns = require("node:dns/promises")
 const net = require("node:net")
 const fs = require("fs/promises")
+const fsSync = require("fs")
 const { getTrendingVideos } = require("./lib/trending")
 const mongoose = require("mongoose")
 const Video = require("./models/Video")
@@ -33,7 +34,236 @@ const COMMENTS_FILE = path.join(__dirname, "database", "comments.json")
 const FAVORITES_FILE = path.join(__dirname, "favorites.json")
 const DUBBING_JOBS_FILE = path.join(__dirname, "dubbing-jobs.json")
 
-const YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
+const LIVE_DUBBING_PROVIDER = String(process.env.LIVE_DUBBING_PROVIDER || "gcp").toLowerCase()
+const LIVE_DUBBING_ENABLED = String(process.env.LIVE_DUBBING_ENABLED || "false").toLowerCase() === "true"
+const LIVE_DUBBING_LANGS = String(process.env.LIVE_DUBBING_LANGS || "hi,en,fr,pa,ru,ar,ur,zh,ja")
+  .split(",")
+  .map(lang => lang.trim().toLowerCase())
+  .filter(Boolean)
+const LIVE_DUBBING_CREDENTIALS_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(__dirname, "secrets", "gcp-sa.json")
+const LIVE_DUBBING_HAS_CREDS = fsSync.existsSync(LIVE_DUBBING_CREDENTIALS_PATH)
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && LIVE_DUBBING_HAS_CREDS) {
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = LIVE_DUBBING_CREDENTIALS_PATH
+}
+
+const { spawn } = require("child_process")
+const LIVE_DUB_ROOT = path.join(__dirname, "database", "live-dub")
+const LIVE_DUB_CHUNK_SEC = Math.max(3, Number(process.env.LIVE_DUB_CHUNK_SEC) || 6)
+const LIVE_DUB_MAX_SEGMENTS = Math.max(10, Number(process.env.LIVE_DUB_MAX_SEGMENTS) || 30)
+
+const DUB_LANG_LOCALES = {
+  en: "en-US",
+  hi: "hi-IN",
+  fr: "fr-FR",
+  pa: "pa-IN",
+  ru: "ru-RU",
+  ar: "ar-XA",
+  ur: "ur-IN",
+  zh: "cmn-Hans-CN",
+  ja: "ja-JP"
+}
+
+let speechClient = null
+let translateClient = null
+let ttsClient = null
+if (LIVE_DUBBING_ENABLED && LIVE_DUBBING_HAS_CREDS) {
+  try {
+    const speech = require("@google-cloud/speech")
+    const { Translate } = require("@google-cloud/translate").v2
+    const textToSpeech = require("@google-cloud/text-to-speech")
+    speechClient = new speech.SpeechClient()
+    translateClient = new Translate()
+    ttsClient = new textToSpeech.TextToSpeechClient()
+  } catch (err) {
+    console.warn("[LIVE_DUB] Google Cloud clients init failed", err.message)
+  }
+}
+
+const liveDubSessions = new Map()
+
+async function ensureDir(dirPath) {
+  await fs.mkdir(dirPath, { recursive: true })
+}
+
+function makeDubSession(channelId, streamUrl, sourceLang) {
+  return {
+    channelId,
+    streamUrl,
+    sourceLang: String(sourceLang || "en").toLowerCase(),
+    createdAt: Date.now(),
+    ffmpeg: null,
+    pollTimer: null,
+    chunkIndex: 0,
+    processing: new Set(),
+    langState: new Map()
+  }
+}
+
+function getLangState(session, lang) {
+  if (!session.langState.has(lang)) {
+    session.langState.set(lang, { seq: 0, segments: [] })
+  }
+  return session.langState.get(lang)
+}
+
+async function writePlaylist(session, lang) {
+  const state = getLangState(session, lang)
+  const outDir = path.join(LIVE_DUB_ROOT, session.channelId, lang)
+  await ensureDir(outDir)
+  const lines = [
+    "#EXTM3U",
+    "#EXT-X-VERSION:3",
+    `#EXT-X-TARGETDURATION:${Math.ceil(LIVE_DUB_CHUNK_SEC)}`,
+    `#EXT-X-MEDIA-SEQUENCE:${state.seq}`
+  ]
+  state.segments.forEach(seg => {
+    lines.push(`#EXTINF:${seg.duration.toFixed(3)},`)
+    lines.push(`/api/live-dub/segment?channelId=${encodeURIComponent(session.channelId)}&lang=${encodeURIComponent(lang)}&file=${encodeURIComponent(seg.file)}`)
+  })
+  const content = lines.join("\n") + "\n"
+  await fs.writeFile(path.join(outDir, "index.m3u8"), content, "utf8")
+}
+
+async function appendSegment(session, lang, fileName) {
+  const state = getLangState(session, lang)
+  state.segments.push({ file: fileName, duration: LIVE_DUB_CHUNK_SEC })
+  if (state.segments.length > LIVE_DUB_MAX_SEGMENTS) {
+    state.segments.shift()
+    state.seq += 1
+  }
+  await writePlaylist(session, lang)
+}
+
+async function transcribeChunk(buffer, sourceLang) {
+  if (!speechClient) return ""
+  const locale = DUB_LANG_LOCALES[sourceLang] || "en-US"
+  const [resp] = await speechClient.recognize({
+    audio: { content: buffer.toString("base64") },
+    config: {
+      encoding: "LINEAR16",
+      sampleRateHertz: 16000,
+      languageCode: locale
+    }
+  })
+  const transcript = (resp.results || [])
+    .map(r => (r.alternatives && r.alternatives[0] ? r.alternatives[0].transcript : ""))
+    .join(" ")
+    .trim()
+  return transcript
+}
+
+async function translateText(text, targetLang) {
+  if (!translateClient) return ""
+  const [translated] = await translateClient.translate(text, targetLang)
+  return String(translated || "").trim()
+}
+
+async function synthesizeText(text, targetLang) {
+  if (!ttsClient) return null
+  const locale = DUB_LANG_LOCALES[targetLang] || "en-US"
+  const [resp] = await ttsClient.synthesizeSpeech({
+    input: { text },
+    voice: { languageCode: locale },
+    audioConfig: { audioEncoding: "MP3" }
+  })
+  return resp.audioContent ? Buffer.from(resp.audioContent) : null
+}
+
+async function processChunk(session, chunkPath) {
+  const buffer = await fs.readFile(chunkPath)
+  const transcript = await transcribeChunk(buffer, session.sourceLang)
+  if (!transcript) return
+
+  for (const lang of LIVE_DUBBING_LANGS) {
+    try {
+      const translated = await translateText(transcript, lang)
+      if (!translated) continue
+      const audioBuf = await synthesizeText(translated, lang)
+      if (!audioBuf) continue
+      const outDir = path.join(LIVE_DUB_ROOT, session.channelId, lang)
+      await ensureDir(outDir)
+      const fileName = `seg-${String(session.chunkIndex).padStart(6, "0")}.mp3`
+      const outPath = path.join(outDir, fileName)
+      await fs.writeFile(outPath, audioBuf)
+      await appendSegment(session, lang, fileName)
+    } catch (err) {
+      console.warn("[LIVE_DUB] chunk process failed", err.message)
+    }
+  }
+
+  session.chunkIndex += 1
+}
+
+async function scanChunks(session) {
+  const chunkDir = path.join(LIVE_DUB_ROOT, session.channelId, "chunks")
+  await ensureDir(chunkDir)
+  const files = await fs.readdir(chunkDir)
+  const wavs = files.filter(f => f.endsWith(".wav")).sort()
+  for (const file of wavs) {
+    const fullPath = path.join(chunkDir, file)
+    if (session.processing.has(fullPath)) continue
+    session.processing.add(fullPath)
+    processChunk(session, fullPath)
+      .catch(err => console.warn("[LIVE_DUB] processChunk", err.message))
+      .finally(() => session.processing.delete(fullPath))
+  }
+}
+
+async function startLiveDubbing({ channelId, streamUrl, sourceLang }) {
+  if (!LIVE_DUBBING_ENABLED || !LIVE_DUBBING_HAS_CREDS || !speechClient || !translateClient || !ttsClient) {
+    return { started: false, reason: "disabled" }
+  }
+  if (!channelId || !streamUrl) return { started: false, reason: "missing" }
+  if (liveDubSessions.has(channelId)) {
+    return { started: true, reason: "already" }
+  }
+
+  const session = makeDubSession(channelId, streamUrl, sourceLang)
+  await ensureDir(path.join(LIVE_DUB_ROOT, channelId, "chunks"))
+
+  const chunkPattern = path.join(LIVE_DUB_ROOT, channelId, "chunks", "chunk-%05d.wav")
+  const args = [
+    "-hide_banner",
+    "-loglevel", "error",
+    "-i", streamUrl,
+    "-vn",
+    "-ac", "1",
+    "-ar", "16000",
+    "-f", "segment",
+    "-segment_time", String(LIVE_DUB_CHUNK_SEC),
+    "-reset_timestamps", "1",
+    chunkPattern
+  ]
+  session.ffmpeg = spawn("ffmpeg", args, { stdio: "ignore" })
+  session.pollTimer = setInterval(() => {
+    scanChunks(session).catch(() => {})
+  }, 2000)
+
+  liveDubSessions.set(channelId, session)
+  return { started: true }
+}
+
+async function stopLiveDubbing(channelId) {
+  const session = liveDubSessions.get(channelId)
+  if (!session) return { stopped: false }
+  if (session.pollTimer) clearInterval(session.pollTimer)
+  if (session.ffmpeg) {
+    session.ffmpeg.kill("SIGKILL")
+  }
+  liveDubSessions.delete(channelId)
+  return { stopped: true }
+}
+
+function getAvailableDubLanguages(channelId) {
+  const session = liveDubSessions.get(channelId)
+  if (!session) return []
+  const out = []
+  for (const lang of LIVE_DUBBING_LANGS) {
+    const state = session.langState.get(lang)
+    if (state && state.segments.length > 0) out.push(lang)
+  }
+  return out
+}const YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 const YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
 const YOUTUBE_CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels"
 const YOUTUBE_COMMENT_THREADS_URL = "https://www.googleapis.com/youtube/v3/commentThreads"
@@ -2502,11 +2732,65 @@ function createApp() {
       res.json(languages)
     })
   )
+
+  app.get("/api/live-dub/status", (req, res) => {
+    const channelId = typeof req.query.channelId === "string" ? req.query.channelId.trim() : ""
+    res.json({ enabled: LIVE_DUBBING_ENABLED, provider: LIVE_DUBBING_PROVIDER, languages: LIVE_DUBBING_LANGS, credentialsConfigured: LIVE_DUBBING_HAS_CREDS, availableLanguages: channelId ? getAvailableDubLanguages(channelId) : [] })
+  })
+
+  app.post(
+    "/api/live-dub/start",
+    asyncHandler(async (req, res) => {
+      const channelId = String(req.body.channelId || "").trim()
+      const streamUrl = String(req.body.streamUrl || "").trim()
+      const sourceLang = String(req.body.sourceLang || "en").trim().toLowerCase()
+      const result = await startLiveDubbing({ channelId, streamUrl, sourceLang })
+      res.json(result)
+    })
+  )
+
+  app.post(
+    "/api/live-dub/stop",
+    asyncHandler(async (req, res) => {
+      const channelId = String(req.body.channelId || "").trim()
+      const result = await stopLiveDubbing(channelId)
+      res.json(result)
+    })
+  )
+
+  app.get(
+    "/api/live-dub/playlist",
+    asyncHandler(async (req, res) => {
+      const channelId = String(req.query.channelId || "").trim()
+      const lang = String(req.query.lang || "").trim().toLowerCase()
+      if (!channelId || !lang) {
+        throw createHttpError(400, "channelId and lang required")
+      }
+      const filePath = path.join(LIVE_DUB_ROOT, channelId, lang, "index.m3u8")
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl")
+      res.sendFile(filePath)
+    })
+  )
+
+  app.get(
+    "/api/live-dub/segment",
+    asyncHandler(async (req, res) => {
+      const channelId = String(req.query.channelId || "").trim()
+      const lang = String(req.query.lang || "").trim().toLowerCase()
+      const file = String(req.query.file || "").trim()
+      if (!channelId || !lang || !file) {
+        throw createHttpError(400, "channelId, lang, file required")
+      }
+      const filePath = path.join(LIVE_DUB_ROOT, channelId, lang, file)
+      res.setHeader("Content-Type", "audio/mpeg")
+      res.sendFile(filePath)
+    })
+  )
+
   app.get(
     "/api/live-tv",
     asyncHandler(async (req, res) => {
       const language = typeof req.query.language === "string" ? req.query.language.trim().toLowerCase() : ""
-
       const category = typeof req.query.category === "string" ? req.query.category.trim().toLowerCase() : ""
       const country = typeof req.query.country === "string" ? req.query.country.trim().toUpperCase() : ""
       const q = typeof req.query.q === "string" ? req.query.q.trim().toLowerCase() : ""
@@ -2537,8 +2821,8 @@ function createApp() {
       res.json(channels.slice(0, limit))
     })
   )
-  app.get(
-    "/api/video/:id",
+
+  app.get("/api/video/:id",
     asyncHandler(async (req, res) => {
       const id = parsePositiveInt(req.params.id, "video id")
       const videos = await getVideos()
@@ -3217,6 +3501,23 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

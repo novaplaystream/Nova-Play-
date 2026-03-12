@@ -23,11 +23,11 @@
 
 <div class="live-layout">
 
-  <main class="content">
+    <main class="content">
     <section class="player-card">
       <div id="playerStage" class="player-stage">
         <video id="livePlayer" controls autoplay playsinline></video>
-        <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>`r`n        <audio id="dubAudio"></audio>
         <div id="audioLangWrap" class="player-lang">
           <label for="audioLangSelect">Audio</label>
           <select id="audioLangSelect"></select>
@@ -35,9 +35,16 @@
         <button id="fsPrevBtn" class="fs-nav fs-prev" type="button">Prev</button>
         <button id="fsNextBtn" class="fs-nav fs-next" type="button">Next</button>
       </div>
+      <div class="player-controls-compact">
+        <button id="toggleFullscreenBtn" type="button">Full Screen</button>
+        <button id="toggleAutoSkipBtn" type="button">Auto Skip: ON</button>
+        <div class="skip-delay">
+          <button class="skip-delay-chip" data-skip-delay="15000" type="button">15s</button>
+          <button class="skip-delay-chip" data-skip-delay="20000" type="button">20s</button>
+          <button class="skip-delay-chip" data-skip-delay="25000" type="button">25s</button>
+        </div>
+      </div>
     </section>
-
-    <section id="trendingStrip" class="trending-strip"></section>
   </main>
 
   <aside class="list-panel">
@@ -48,16 +55,6 @@
     <div class="panel-status">
       <div id="nowPlaying">Now Playing: none</div>
       <div id="nowPlayingMeta">Choose a channel from right panel</div>
-    </div>
-
-    <div class="panel-controls">
-      <button id="toggleFullscreenBtn" type="button">Full Screen</button>
-      <button id="toggleAutoSkipBtn" type="button">Auto Skip: ON</button>
-      <div class="skip-delay">
-        <button class="skip-delay-chip" data-skip-delay="15000" type="button">15s</button>
-        <button class="skip-delay-chip" data-skip-delay="20000" type="button">20s</button>
-        <button class="skip-delay-chip" data-skip-delay="25000" type="button">25s</button>
-      </div>
     </div>
     <input id="quickSearch" placeholder="Instant channel search">
 
@@ -95,8 +92,7 @@ const nowPlayingMetaEl = document.getElementById("nowPlayingMeta")
 const videoEl = document.getElementById("livePlayer")
 const frameEl = document.getElementById("liveFrame")
 const audioLangWrap = document.getElementById("audioLangWrap")
-const audioLangSelect = document.getElementById("audioLangSelect")
-const channelGrid = document.getElementById("channelGrid")
+const audioLangSelect = document.getElementById("audioLangSelect")`r`nconst dubAudioEl = document.getElementById("dubAudio")`r`nconst channelGrid = document.getElementById("channelGrid")
 const trendingStrip = document.getElementById("trendingStrip")
 
 let channels = []
@@ -114,8 +110,7 @@ let autoSkipStartTimeoutMs = DEFAULT_AUTO_SKIP_START_TIMEOUT_MS
 let lastStatusMessage = ""
 let lastStatusAt = 0
 let audioLangInitialized = false
-let currentAudioTracks = []
-
+let currentAudioTracks = []`r`nlet dubEnabled = false`r`nlet dubAvailableLangs = []`r`nlet dubHls = null`r`nlet dubChannelId = ""`r`n
 function dedupeChannels(list) {
   const seen = new Set()
   const output = []
@@ -259,16 +254,20 @@ function destroyPlayback() {
   videoEl.style.display = "none"
   frameEl.style.display = "none"
   resetAudioTracks()
+  stopDubAudio()
 }
 
 function resetAudioTracks() {
   currentAudioTracks = []
   audioLangInitialized = false
   audioLangSelect.innerHTML = ""
+  const option = document.createElement("option")
+  option.value = "original"
+  option.textContent = "Original"
+  audioLangSelect.appendChild(option)
   audioLangSelect.disabled = true
-  audioLangWrap.style.display = "none"
+  audioLangWrap.style.display = "flex"
 }
-
 function formatAudioLabel(track, index) {
   const name = String(track?.name || "").trim()
   const lang = String(track?.lang || "").trim()
@@ -341,6 +340,68 @@ function updateAudioTracksFromNative() {
   }
 }
 
+
+function setDubOptions(langs) {
+  audioLangSelect.innerHTML = ""
+  const original = document.createElement("option")
+  original.value = "original"
+  original.textContent = "Original"
+  audioLangSelect.appendChild(original)
+  if (Array.isArray(langs)) {
+    langs.forEach(lang => {
+      const option = document.createElement("option")
+      option.value = String(lang)
+      option.textContent = String(lang).toUpperCase()
+      audioLangSelect.appendChild(option)
+    })
+  }
+  audioLangSelect.disabled = false
+  audioLangWrap.style.display = "flex"
+}
+
+function stopDubAudio() {
+  if (dubHls) {
+    dubHls.destroy()
+    dubHls = null
+  }
+  dubAudioEl.pause()
+  dubAudioEl.removeAttribute("src")
+  dubAudioEl.load()
+  videoEl.muted = false
+}
+
+function playDubAudio(channelId, lang) {
+  if (!lang || lang === "original") {
+    stopDubAudio()
+    return
+  }
+  const url = `/api/live-dub/playlist?channelId=${encodeURIComponent(channelId)}&lang=${encodeURIComponent(lang)}`
+  videoEl.muted = true
+  if (dubAudioEl.canPlayType("application/vnd.apple.mpegurl")) {
+    dubAudioEl.src = url
+    dubAudioEl.play().catch(() => {})
+    return
+  }
+  if (!window.Hls || !window.Hls.isSupported()) return
+  if (dubHls) dubHls.destroy()
+  dubHls = new Hls({ lowLatencyMode: true })
+  dubHls.loadSource(url)
+  dubHls.attachMedia(dubAudioEl)
+  dubAudioEl.play().catch(() => {})
+}
+
+async function refreshDubStatus(channel) {
+  try {
+    const channelId = String(channel?.id || channel?.channelId || channel?.name || "")
+    if (!channelId) return
+    const res = await fetch(`/api/live-dub/status?channelId=${encodeURIComponent(channelId)}`)
+    const data = await res.json().catch(() => null)
+    if (!data) return
+    dubEnabled = Boolean(data.enabled) && Boolean(data.credentialsConfigured)
+    dubAvailableLangs = Array.isArray(data.availableLanguages) ? data.availableLanguages : []
+    setDubOptions(dubEnabled ? dubAvailableLangs : [])
+  } catch {}
+}
 function getChannelKey(channel) {
   return String(channel?.id || `${channel?.name || "unknown"}|${channel?.streamUrl || channel?.videoId || channel?.channelId || ""}`)
 }
@@ -567,9 +628,7 @@ async function playHls(channel, options = {}) {
   }
 
 
-  videoEl.style.display = "block"
-  resetAudioTracks()
-
+  videoEl.style.display = "block"`r`n  resetAudioTracks()`r`n  const dubChannel = channel`r`n  const dubId = String(channel?.id || channel?.channelId || channel?.name || "")`r`n  if (dubId) {`r`n    dubChannelId = dubId`r`n    fetch("/api/live-dub/start", {`r`n      method: "POST",`r`n      headers: { "Content-Type": "application/json" },`r`n      body: JSON.stringify({ channelId: dubId, streamUrl: channel.streamUrl, sourceLang: channel.language, name: channel.name })`r`n    }).then(() => refreshDubStatus(dubChannel)).catch(() => {})`r`n  }`r`n
   let hasStarted = false
   let failed = false
 
@@ -640,8 +699,7 @@ async function playChannel(channel, options = {}) {
   const userInitiated = options.userInitiated === true
 
   currentChannelKey = channelKey
-  destroyPlayback()
-  renderChannelCards(filteredChannels)
+  destroyPlayback()`r`n  if (dubChannelId) {`r`n    fetch("/api/live-dub/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channelId: dubChannelId }) }).catch(() => {})`r`n  }`r`n  renderChannelCards(filteredChannels)
   renderTrending(filteredChannels)
 
   const nextAttempts = new Set(attemptedKeys)
@@ -782,6 +840,7 @@ function quickSearchAndPlay() {
 }
 
 async function init() {
+  resetAudioTracks()
   try {
     const rawChannels = await fetchJson("/api/live-tv?limit=10000")
     channels = dedupeChannels(rawChannels).map(ch => ({ ...ch, derivedCategory: inferCategoryBucket(ch) }))
@@ -810,17 +869,7 @@ sourceTypeSelect.addEventListener("change", applyFilters)
 fsPrevBtn.addEventListener("click", () => playByOffset(-1))
 fsNextBtn.addEventListener("click", () => playByOffset(1))
 toggleFullscreenBtn.addEventListener("click", togglePlayerFullscreen)
-  audioLangSelect.addEventListener("change", () => {
-    const idx = Number(audioLangSelect.value)
-    if (hls && Array.isArray(hls.audioTracks) && hls.audioTracks[idx]) {
-      hls.audioTrack = idx
-      return
-    }
-    if (videoEl && videoEl.audioTracks && videoEl.audioTracks.length) {
-      Array.from(videoEl.audioTracks).forEach((track, trackIndex) => {
-        track.enabled = trackIndex === idx
-      })
-    }
+  audioLangSelect.addEventListener("change", () => {`r`n  const lang = String(audioLangSelect.value || "original")`r`n  playDubAudio(dubChannelId, lang)`r`n})`r`n    }
   })
 playerStage.addEventListener("dblclick", event => {
   if (event.target && event.target.closest && event.target.closest("button")) return
@@ -848,6 +897,20 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
