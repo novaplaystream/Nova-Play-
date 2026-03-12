@@ -673,7 +673,7 @@ opacity:.92;
 
 .player-card {
   flex: 2.2;
-  min-width: 55%;
+  min-width: 56%;
   height:100%;
   overflow:hidden;
   display:flex;
@@ -681,15 +681,51 @@ opacity:.92;
 }
 
 #playerStage {
-  height: calc(100% - 102px);
-  min-height: 480px;
-  max-height: 85vh;
+  flex:1;
+  min-height: 520px;
+  max-height: calc(100% - 80px);
+  height: auto;
+  margin-bottom: 10px;
 }
 
 .player-controls-compact {
   flex-wrap:wrap;
-  gap:12px;
+  gap:10px;
   margin-top:8px;
+  justify-content:flex-start;
+  align-items:center;
+}
+
+.player-controls-compact button,
+.player-controls-compact .skip-delay-chip {
+  min-width:60px;
+  font-size:13px;
+  padding:8px 12px;
+}
+
+.list-panel {
+  flex: 0 0 330px;
+  min-width: 310px;
+  max-width: 360px;
+  height: calc(100vh - 95px);
+  overflow-y:auto;
+  background: rgba(8, 14, 27, 0.92);
+}
+
+.list-panel .channel-list {
+  max-height: calc(100% - 170px);
+  overflow-y:auto;
+}
+
+.live-layout {
+  display:flex;
+  flex-direction:row;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 18px;
+  min-height: calc(100vh - 75px);
+  max-height: calc(100vh - 75px);
+  overflow:hidden;
 }
 
 .list-panel {
