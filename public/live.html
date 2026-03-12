@@ -59,6 +59,8 @@
     </div>
     <input id="quickSearch" placeholder="Instant channel search">
 
+    <div id="trendingStrip" class="trending-strip"></div>
+
     <div class="filter-row">
       <select id="liveLanguage"><option value="all">All Languages</option></select>
       <select id="liveCountry"><option value="all">All Countries</option></select>
@@ -519,6 +521,7 @@ function renderChannelCards(list) {
 }
 
 function renderTrending(list) {
+  if (!trendingStrip) return
   trendingStrip.innerHTML = ""
   const top = list.slice(0, 3)
   if (!top.length) return
