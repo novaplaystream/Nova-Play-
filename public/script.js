@@ -126,10 +126,25 @@ row.scrollLeft=0
 
 },30)
 
+row.addEventListener('wheel', e => {
+  e.preventDefault()
+  row.scrollLeft += e.deltaY > 0 ? 130 : -130
+})
+
 })
 
 }
 
+function enableRowButtons(){
+  document.querySelectorAll('.row-wrapper').forEach(wrapper => {
+    const row = wrapper.querySelector('.row-scroll')
+    const prev = wrapper.querySelector('.row-btn.prev')
+    const next = wrapper.querySelector('.row-btn.next')
+    if(!row) return
+    if(prev) prev.addEventListener('click', () => row.scrollBy({ left: -320, behavior: 'smooth'}))
+    if(next) next.addEventListener('click', () => row.scrollBy({ left: 320, behavior: 'smooth'}))
+  })
+}
 
 
 // ===== RUN =====
@@ -163,7 +178,7 @@ loadLiveChannels()
 
 revealAdminLink()
 
-setupRowButtons()
+enableRowButtons()
 
 updateLocalDateTime()
 setInterval(updateLocalDateTime, 1000)

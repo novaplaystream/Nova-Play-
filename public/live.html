@@ -106,6 +106,7 @@ const audioLangSelect = document.getElementById("audioLangSelect")
 const dubAudioEl = document.getElementById("dubAudio")
 const channelGrid = document.getElementById("channelGrid")
 const trendingStrip = document.getElementById("trendingStrip")
+const liveTag = document.getElementById("liveTag")
 
 function formatLocalDateTime() {
   const now = new Date()
@@ -633,6 +634,24 @@ function syncFullscreenButtonState() {
   const fsEl = document.fullscreenElement || document.webkitFullscreenElement
   const isFs = fsEl === playerStage || fsEl === videoEl || fsEl === frameEl
   toggleFullscreenBtn.textContent = isFs ? "Exit Full Screen" : "Full Screen"
+
+  if (liveTag) {
+    if (isFs) {
+      liveTag.classList.add("fs-live-tag")
+      liveTag.classList.remove("live-tag")
+      liveTag.style.position = "fixed"
+      liveTag.style.top = "12px"
+      liveTag.style.left = "12px"
+      liveTag.style.zIndex = "999999"
+    } else {
+      liveTag.classList.add("live-tag")
+      liveTag.classList.remove("fs-live-tag")
+      liveTag.style.position = "absolute"
+      liveTag.style.top = "12px"
+      liveTag.style.left = "12px"
+      liveTag.style.zIndex = "20"
+    }
+  }
 }
 function syncAutoSkipButtonState() {
   toggleAutoSkipBtn.textContent = autoSkipEnabled ? "Auto Skip: ON" : "Auto Skip: OFF"
