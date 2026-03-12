@@ -14,10 +14,24 @@ async function revealAdminLink() {
 
 // ===== NOVAPLAY HOMEPAGE LOADER =====
 
+function normalizeCategory(category, title) {
+  const raw = String(category || title || '').trim().toLowerCase()
+  if (!raw) return 'all'
+  if (raw.includes('movie') || raw.includes('film') || raw.includes('cinema') || raw.includes('bollywood') || raw.includes('hollywood') || raw.includes('trailer')) return 'movies'
+  if (raw.includes('music') || raw.includes('song') || raw.includes('album') || raw.includes('bhajan')) return 'music'
+  if (raw.includes('news') || raw.includes('politic') || raw.includes('headlines')) return 'news'
+  if (raw.includes('sport') || raw.includes('cricket') || raw.includes('football') || raw.includes('ipl')) return 'sports'
+  if (raw.includes('game') || raw.includes('gaming') || raw.includes('esports')) return 'gaming'
+  if (raw.includes('tech') || raw.includes('ai') || raw.includes('code') || raw.includes('program')) return 'technology'
+  if (raw.includes('education') || raw.includes('tutorial') || raw.includes('course') || raw.includes('lecture')) return 'education'
+  if (raw.includes('travel') || raw.includes('nature') || raw.includes('vlog')) return 'travel'
+  return raw
+}
+
 function createVideoCard(video){
   const lang = video.language ? String(video.language).toLowerCase() : ''
   const country = video.country ? String(video.country).toUpperCase() : ''
-  const category = video.category ? String(video.category).toLowerCase() : 'all'
+  const category = normalizeCategory(video.category, video.title)
   return `
   <div class="card" data-videoid="${video.id || video._id || ''}" data-title="${video.title || ''}" data-thumbnail="${video.thumbnailUrl || video.thumbnail || 'https://via.placeholder.com/320x180?text=No+Image'}" data-category="${category}" data-language="${lang}" data-country="${country}">
     <img src="${video.thumbnailUrl || video.thumbnail || 'https://via.placeholder.com/320x180?text=No+Image'}" alt="${video.title}">
@@ -71,15 +85,24 @@ async function loadHomepage(){
         heroRow.innerHTML += cardHtml
       }
 
-      if(v.category === 'movies' && movies){
+      const categoryKey = normalizeCategory(v.category, v.title)
+
+      if(categoryKey === 'movies' && movies){
         movies.innerHTML += cardHtml
       }
 
-      if(v.category === 'music' && music){
+      if(categoryKey === 'music' && music){
         music.innerHTML += cardHtml
       }
 
-      const categoryKey = String(v.category || 'all').toLowerCase()
+      if(categoryKey === 'news' && false){
+        // optional row for news in future
+      }
+
+      if(categoryKey === 'live' && false){
+        // optional row for live in future
+      }
+
       if(!window.movieCategoriesData[categoryKey]) window.movieCategoriesData[categoryKey] = []
       window.movieCategoriesData[categoryKey].push(v)
     })

@@ -300,57 +300,105 @@ opacity:.92;
   will-change:transform;
 }
 
+.layout {
+  display:grid;
+  grid-template-columns:260px 1fr;
+  min-height:calc(100vh - 80px);
+  gap:20px;
+  padding:20px;
+  margin-top:72px;
+}
+
 .sidebar{
+  position:sticky;
+  top:80px;
+  align-self:flex-start;
   display:flex;
   flex-direction:column;
-  row-gap:12px;
-  background:#0b1324;
-  padding:16px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.08);
+  row-gap:10px;
+  background:linear-gradient(180deg, rgba(7, 12, 26, 0.95), rgba(12, 20, 42, 0.88));
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,0.14);
+  box-shadow:0 16px 35px rgba(0,0,0,0.35);
+  padding:18px;
+  backdrop-filter:blur(10px);
+  min-height:calc(100vh - 112px);
+}
+
+.sidebar h3 {
+  margin:0 0 8px 0;
+  color:#fff;
+  font-size:14px;
+  letter-spacing:1px;
+  text-transform:uppercase;
 }
 
 .sidebar a{
   text-decoration:none;
-  color:#dce9ff;
-  padding:10px 10px;
-  border-radius:10px;
+  color:#d9e6ff;
+  padding:12px 14px;
+  border-radius:12px;
   font-weight:700;
-  font-size:13px;
+  font-size:14px;
   display:flex;
   align-items:center;
-  gap:8px;
-  transition:.2s;
+  gap:12px;
+  transition:all .25s ease;
+  position:relative;
+}
+
+.sidebar a::before {
+  content:'';
+  position:absolute;
+  left:-8px;
+  top:50%;
+  transform:translateY(-50%);
+  width:4px;
+  height:20px;
+  border-radius:999px;
+  background:transparent;
+  transition:all .25s ease;
 }
 
 .sidebar a span{
   display:inline-flex;
-  width:22px;
-  height:22px;
+  width:26px;
+  height:26px;
   align-items:center;
   justify-content:center;
-  font-size:14px;
+  font-size:15px;
+  border-radius:8px;
+  background:rgba(255,255,255,0.06);
 }
 
 .sidebar a em{
   font-style:normal;
-  opacity:.8;
+  opacity:0.78;
+  letter-spacing:0.25px;
 }
 
 .sidebar a.active,
 .sidebar a:hover {
-  background:rgba(78, 150, 250, 0.26);
+  background:linear-gradient(120deg, rgba(65, 136, 255, 0.25), rgba(32, 167, 255, 0.16));
   color:#fff;
-  border:1px solid rgba(78, 158, 249, .65);
+  border:1px solid rgba(79, 178, 255, 0.72);
 }
 
-.live-layout{
-display:grid;
-grid-template-columns:1fr 360px;
-gap:16px;
-padding:16px;
-position:relative;
-z-index:1;
+.sidebar a.active::before,
+.sidebar a:hover::before {
+  background:linear-gradient(180deg, #1E88E5, #64B5F6);
+}
+
+.sidebar a.active span,
+.sidebar a:hover span {
+  background:rgba(255,255,255,0.22);
+}
+
+@media(max-width: 1100px){
+  .layout { grid-template-columns:1fr; padding:14px; }
+  .sidebar { position:relative; top:0; min-height:auto; height:auto; width:100%; flex-direction:row; justify-content:space-around; align-items:center; border-radius:14px; padding:10px; }
+  .sidebar a { padding:8px 10px; font-size:12px; }
+  .sidebar a em { display:none; }
 }
 
 .live-appbar, .live-layout, .player-card, .channel-list, .hero-banner {

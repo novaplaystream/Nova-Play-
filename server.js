@@ -986,6 +986,7 @@ function isPublicPath(pathname) {
   if (pathname === "/favicon.ico") return true
   if (pathname.startsWith("/assets/")) return true
   if (pathname === "/google8e310517aefcb45c.html") return true
+  if (pathname.startsWith("/api/") && pathname !== "/api/me") return true
   return false
 }
 function deriveCategory(title) {
