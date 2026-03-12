@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="ott-body">
+<body class="ott-body" data-page="home">
   <div class="ott-shell">
     <aside class="ott-sidebar sidebar">
       <a href="/" class="ott-brand">
@@ -18,37 +18,29 @@
         <span>NovaPlay</span>
       </a>
       <nav class="side-nav">
-        <a href="#top" class="active">
-          <span class="side-icon">??</span>
+        <a href="/" class="active">
+          <span class="side-icon">NP</span>
           <span>Home</span>
         </a>
         <a href="/live.html">
-          <span class="side-icon">??</span>
+          <span class="side-icon">LV</span>
           <span>Live TV</span>
         </a>
-        <a href="#topPicks">
-          <span class="side-icon">?</span>
-          <span>Top Picks</span>
-        </a>
-        <a href="#trendingSection">
-          <span class="side-icon">??</span>
-          <span>Trending</span>
-        </a>
-        <a href="#moviesSection">
-          <span class="side-icon">??</span>
+        <a href="#" aria-disabled="true">
+          <span class="side-icon">MV</span>
           <span>Movies</span>
         </a>
-        <a href="#musicSection">
-          <span class="side-icon">??</span>
+        <a href="#" aria-disabled="true">
+          <span class="side-icon">MU</span>
           <span>Music</span>
         </a>
-        <a href="#categorySection">
-          <span class="side-icon">??</span>
+        <a href="#" aria-disabled="true">
+          <span class="side-icon">CT</span>
           <span>Categories</span>
         </a>
       </nav>
       <div class="side-footer">
-        <div class="side-status">Premium HDR · Dolby Atmos</div>
+        <div class="side-status">Premium HDR Â· Dolby Atmos</div>
         <a href="/login.html" class="side-login">Login</a>
       </div>
     </aside>
@@ -76,143 +68,25 @@
       </header>
 
       <main class="ott-content" id="top">
-        <section class="ott-hero hero">
-          <div class="hero-layer"></div>
-          <div class="hero-copy">
-            <div class="hero-tag">Premium Originals · 4K HDR · Spatial Audio</div>
-            <h1>NovaPlay Originals</h1>
-            <p>Binge the most cinematic streaming experience. Fresh seasons, mega blockbusters, and live events in one place.</p>
-            <div class="hero-cta">
-              <a href="/live.html" class="btn btn-primary">Watch Live</a>
-              <a href="#trendingSection" class="btn btn-secondary">Explore Trending</a>
-            </div>
-            <div class="hero-meta">Updated daily · 10,000+ channels · Smart recommendations</div>
+        <section class="premium-hero" aria-label="NovaPlay premium OTT banner">
+          <div class="premium-glow"></div>
+          <div class="premium-content">
+            <div class="premium-badge">Premium OTT Experience</div>
+            <h1>NovaPlay</h1>
+            <p>Stream cinematic originals, live TV, and curated premieres with studio-grade quality, all in one premium destination.</p>
+            <div class="premium-meta">4K HDR Â· Dolby Atmos Â· Multi-device streaming</div>
           </div>
-          <div class="mini-player-card">
-            <div class="mini-player" id="miniPlayer"></div>
-            <div class="mini-meta">
-              <div class="mini-title" id="miniTitle">Now Playing</div>
-              <a href="#" id="miniPlayBtn" class="mini-play">Watch Now</a>
-            </div>
-          </div>
-        </section>
-
-        <section class="backdrop-wall">
-          <div class="wall-head">
-            <h2>15 Cinematic Backdrops</h2>
-            <p>Cinematic moodboards for a premium OTT vibe.</p>
-          </div>
-          <div id="wallGrid" class="wall-grid"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1517605196450-3ac39f5e6d5d?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1542206395-9feb3edaa68f?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1502920917128-1aa500764b2b?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1465101162946-4377e57745c3?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1511765224389-37f0e77cf0eb?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1497032205916-ac775f0649ae?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1485564389323-8bdfa0c8b4f9?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=900&q=80');"></div>
-            <div class="wall-tile" style="background-image:url('https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=900&q=80');"></div>
-          </div>
-        </section>
-
-        <section class="ott-row section" id="topPicks">
-          <div class="row-head">
-            <h2>Top Picks For You</h2>
-            <span>Curated premium hits</span>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="heroRow" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
-          </div>
-        </section>
-
-        <section id="trendingSection" class="ott-row section">
-          <div class="row-head">
-            <h2>Trending Now</h2>
-            <span>Most watched across NovaPlay</span>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="trendingVideos" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
-          </div>
-        </section>
-
-        <section id="moviesSection" class="ott-row section">
-          <div class="row-head">
-            <h2>Blockbuster Movies</h2>
-            <span>Studio-level premieres</span>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="moviesRow" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
-          </div>
-        </section>
-
-        <section id="continueSection" class="ott-row section">
-          <div class="row-head">
-            <h2>Continue Watching</h2>
-            <span>Resume where you left off</span>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="continueRow" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
-          </div>
-        </section>
-
-        <section id="musicSection" class="ott-row section">
-          <div class="row-head">
-            <h2>Music & Shows</h2>
-            <span>Concerts, podcasts, and more</span>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="musicRow" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
-          </div>
-        </section>
-
-        <section id="categorySection" class="ott-row section">
-          <div class="row-head">
-            <h2>Browse Categories</h2>
-            <span id="categoryTitle">Category: All</span>
-          </div>
-          <div class="chip-stack">
-            <div class="chip-group" id="categoryFilters"></div>
-            <div class="chip-group" id="langChips"></div>
-            <div class="chip-group" id="countryChips"></div>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="categoryMovies" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
-          </div>
-        </section>
-
-        <section class="ott-row section" id="liveSection">
-          <div class="row-head">
-            <h2>Live TV Highlights</h2>
-            <span>Always on, always trending</span>
-          </div>
-          <div class="row-wrapper">
-            <button class="row-btn prev">‹</button>
-            <div id="channels" class="row-scroll ott-cards"></div>
-            <button class="row-btn next">›</button>
+          <div class="premium-art">
+            <div class="art-layer art-1"></div>
+            <div class="art-layer art-2"></div>
+            <div class="art-layer art-3"></div>
           </div>
         </section>
       </main>
 
       <footer class="ott-footer">
         <div>
-          <strong>NovaPlay</strong> © 2026 · Stream cinematic originals, live TV, and curated picks.
+          <strong>NovaPlay</strong> Â© 2026 Â· Premium OTT streaming made cinematic.
         </div>
         <div class="footer-links">
           <a href="#top">Back to top</a>
@@ -226,7 +100,3 @@
   <script src="/script.js"></script>
 </body>
 </html>
-
-
-
-
