@@ -52,9 +52,30 @@
 </main>
 
 <script>
+const urlParams = new URLSearchParams(window.location.search)
+const rawRedirect = String(urlParams.get("redirect") || "").trim()
+const redirectTo = rawRedirect && rawRedirect.startsWith("/") ? rawRedirect : "/"
+
 const ageConfirm = document.getElementById("ageConfirm")
 const loginBtn = document.getElementById("googleLoginBtn")
 const loginError = document.getElementById("loginError")
+
+async function checkAlreadyLoggedIn() {
+  try {
+    const res = await fetch("/api/me")
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.email) {
+        window.location.href = redirectTo
+        return
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+checkAlreadyLoggedIn()
 
 loginBtn.addEventListener("click", () => {
   loginError.textContent = ""
@@ -62,7 +83,7 @@ loginBtn.addEventListener("click", () => {
     loginError.textContent = "Please confirm you are 18+ to continue."
     return
   }
-  window.location.href = "/auth/google?age=1"
+  window.location.href = `/auth/google?age=1&redirect=${encodeURIComponent(redirectTo)}`
 })
 </script>
 </body>

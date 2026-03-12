@@ -286,7 +286,7 @@ const userSessions = new Map()
 const oauthStates = new Map()
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000
-const USER_SESSION_TTL_MS = 24 * 60 * 60 * 1000
+const USER_SESSION_TTL_MS = 48 * 60 * 60 * 1000 // 48 hours
 
 const SUPPORTED_LANGUAGES = [
   "en", "hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "pa", "ur",
@@ -977,6 +977,7 @@ function clearUserSession(res) {
 }
 
 function isPublicPath(pathname) {
+  if (pathname === "/" || pathname === "/index.html") return true
   if (pathname === "/login.html") return true
   if (pathname === "/auth/google") return true
   if (pathname === "/auth/google/callback") return true
@@ -2507,10 +2508,14 @@ function createApp() {
       return next(createHttpError(400, "Age confirmation required"))
     }
 
+    const redirectTo = String(req.query.redirect || "/").trim()
+    const normalizedRedirect = redirectTo.startsWith("/") ? redirectTo : "/"
+
     const state = crypto.randomBytes(18).toString("hex")
     oauthStates.set(state, {
       expiresAt: Date.now() + OAUTH_STATE_TTL_MS,
-      ageConfirmed: true
+      ageConfirmed: true,
+      redirectTo: normalizedRedirect
     })
 
     const redirectUri = getGoogleRedirectUrl(req)
@@ -2583,7 +2588,9 @@ function createApp() {
 
     const secureCookie = req.secure || String(req.headers["x-forwarded-proto"] || "").toLowerCase() === "https"
     issueUserSession(res, email, secureCookie)
-    res.redirect("/")
+
+    const targetRedirect = stateMeta && stateMeta.redirectTo && String(stateMeta.redirectTo).startsWith("/") ? stateMeta.redirectTo : "/"
+    res.redirect(targetRedirect)
   }))
 
   app.get("/logout", (req, res) => {
@@ -2600,7 +2607,8 @@ function createApp() {
       if (req.path.startsWith("/api/")) {
         return res.status(401).json({ error: "Login required" })
       }
-      return res.redirect("/login.html")
+      const redirectTo = encodeURIComponent(req.originalUrl || req.url || req.path)
+      return res.redirect(`/login.html?redirect=${redirectTo}`)
     }
 
     if (req.path === "/admin.html" && adminEmail && session.email.toLowerCase() !== adminEmail) {
