@@ -168,11 +168,16 @@ opacity:.92;
   position:fixed;
   inset:0;
   z-index:0;
-  background-image: linear-gradient(to bottom, rgba(7, 22, 48, .85), rgba(2, 6, 20, .95)),
-    url('https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=1600&q=80');
-  background-size: cover;
-  background-position: center;
-  filter: saturate(1.1) brightness(0.65);
+  background-color:#020714;
+  background-image:
+    linear-gradient(to bottom right, rgba(7, 15, 35, 0.82), rgba(12, 26, 58, 0.74)),
+    url('/assets/novaplay-live-bg.jpg');
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+  filter:saturate(1.15) brightness(0.62);
+  transform:scale(1.01);
+  will-change:transform;
 }
 
 .live-layout{
@@ -187,6 +192,17 @@ z-index:1;
 .live-appbar, .live-layout, .player-card, .channel-list, .hero-banner {
   position:relative;
   z-index:2;
+}
+
+#playerStage,
+#livePlayer,
+#liveFrame {
+  position:relative;
+  z-index:2;
+}
+
+.live-banner {
+  z-index: 2;
 }
 
 
