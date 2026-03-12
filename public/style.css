@@ -62,6 +62,13 @@ border-color:#53a8ff;
 }
 
 
+.datetime{
+  color:#b8c7e2;
+  font-size:14px;
+  margin-left:16px;
+  white-space:nowrap;
+}
+
 /* ===== MAIN LAYOUT ===== */
 
 .live-layout{

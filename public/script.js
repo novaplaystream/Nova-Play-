@@ -129,6 +129,28 @@ row.scrollLeft=0
 
 // ===== RUN =====
 
+function formatLocalDateTime() {
+  const now = new Date()
+  const locale = navigator.language || "en-US"
+  const options = {
+    weekday: "short",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short"
+  }
+  return new Intl.DateTimeFormat(locale, options).format(now)
+}
+
+function updateLocalDateTime() {
+  const el = document.getElementById("localDateTime")
+  if (!el) return
+  el.textContent = formatLocalDateTime()
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
 loadHomepage()
@@ -137,6 +159,9 @@ loadLiveChannels()
 revealAdminLink()
 
 setupRowButtons()
+
+updateLocalDateTime()
+setInterval(updateLocalDateTime, 1000)
 
 })
 
