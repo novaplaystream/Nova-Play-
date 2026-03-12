@@ -321,105 +321,8 @@ function destroyPlayback() {
 function resetAudioTracks() {
   currentAudioTracks = []
   audioLangInitialized = false
-  audioLangSelect.innerHTML = ""
-  const option = document.createElement("option")
-  option.value = "original"
-  option.textContent = "Original"
-  audioLangSelect.appendChild(option)
-  audioLangSelect.disabled = true
-  audioLangWrap.style.display = "flex"
+  renderAudioOptions([])
 }
-function formatAudioLabel(track, index) {
-  const name = String(track?.name || "").trim()
-  const lang = String(track?.lang || "").trim()
-  if (name && lang) return `${name} (${lang.toUpperCase()})`
-  if (name) return name
-  if (lang) return lang.toUpperCase()
-  return `Track ${index + 1}`
-}
-
-function findHindiTrackIndex(tracks) {
-  return tracks.findIndex(track => {
-    const name = String(track?.name || "").toLowerCase()
-    const lang = String(track?.lang || "").toLowerCase()
-    return lang.startsWith("hi") || name.includes("hindi")
-  })
-}
-
-function renderAudioTracks(tracks, activeIndex) {
-  if (!Array.isArray(tracks) || tracks.length === 0) {
-    resetAudioTracks()
-    return
-  }
-  currentAudioTracks = tracks
-  audioLangSelect.innerHTML = ""
-  tracks.forEach((track, index) => {
-    const option = document.createElement("option")
-    option.value = String(index)
-    option.textContent = formatAudioLabel(track, index)
-    audioLangSelect.appendChild(option)
-  })
-  audioLangWrap.style.display = "flex"
-  audioLangSelect.disabled = false
-  const preferred = findHindiTrackIndex(tracks)
-  const initialIndex = preferred >= 0 ? preferred : Math.max(0, Number(activeIndex) || 0)
-  audioLangSelect.value = String(initialIndex)
-}
-
-function updateAudioTracksFromHls() {
-  if (!hls) return
-  const tracks = Array.isArray(hls.audioTracks) ? hls.audioTracks : []
-  if (tracks.length === 0) {
-    resetAudioTracks()
-    return
-  }
-  renderAudioTracks(tracks, hls.audioTrack)
-  if (!audioLangInitialized) {
-    const preferred = findHindiTrackIndex(tracks)
-    if (preferred >= 0) {
-      hls.audioTrack = preferred
-      audioLangSelect.value = String(preferred)
-    }
-    audioLangInitialized = true
-  }
-}
-
-function updateAudioTracksFromNative() {
-  const tracks = videoEl && videoEl.audioTracks ? Array.from(videoEl.audioTracks) : []
-  if (tracks.length === 0) {
-    resetAudioTracks()
-    return
-  }
-  renderAudioTracks(tracks, tracks.findIndex(t => t.enabled))
-  if (!audioLangInitialized) {
-    const preferred = findHindiTrackIndex(tracks)
-    if (preferred >= 0) {
-      tracks.forEach((t, idx) => { t.enabled = idx === preferred })
-      audioLangSelect.value = String(preferred)
-    }
-    audioLangInitialized = true
-  }
-}
-
-
-function setDubOptions(langs) {
-  audioLangSelect.innerHTML = ""
-  const original = document.createElement("option")
-  original.value = "original"
-  original.textContent = "Original"
-  audioLangSelect.appendChild(original)
-  if (Array.isArray(langs)) {
-    langs.forEach(lang => {
-      const option = document.createElement("option")
-      option.value = String(lang)
-      option.textContent = String(lang).toUpperCase()
-      audioLangSelect.appendChild(option)
-    })
-  }
-  audioLangSelect.disabled = false
-  audioLangWrap.style.display = "flex"
-}
-
 function stopDubAudio() {
   if (dubHls) {
     dubHls.destroy()
@@ -659,13 +562,11 @@ function syncFullscreenButtonState() {
   if (liveTag) {
     if (isFs) {
       liveTag.classList.add("fs-live-tag")
-      liveTag.classList.remove("live-tag")
       liveTag.style.position = "fixed"
       liveTag.style.top = "12px"
       liveTag.style.left = "12px"
       liveTag.style.zIndex = "999999"
     } else {
-      liveTag.classList.add("live-tag")
       liveTag.classList.remove("fs-live-tag")
       liveTag.style.position = "absolute"
       liveTag.style.top = "12px"
@@ -1039,6 +940,8 @@ syncSkipDelayChipState()
 </script>
 </body>
 </html>
+
+
 
 
 
