@@ -1,4 +1,4 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -17,38 +17,38 @@
         <img src="/assets/novaplay-mark.svg" alt="NovaPlay">
         <span>NovaPlay</span>
       </a>
-      <nav class="side-nav">
-        <a href="/" class="active">
-          <span class="side-icon">NP</span>
+                  <nav class="side-nav">
+        <a href="#top" class="active" data-filter="home">
+          <span class="side-icon" aria-hidden="true">NP</span>
           <span>Home</span>
         </a>
         <a href="/live.html">
-          <span class="side-icon">LV</span>
+          <span class="side-icon" aria-hidden="true">LV</span>
           <span>Live TV</span>
         </a>
-        <a href="#" aria-disabled="true">
-          <span class="side-icon">WS</span>
+        <a href="#library" data-filter="webseries">
+          <span class="side-icon" aria-hidden="true">WS</span>
           <span>Web Series</span>
         </a>
         <a href="/studio.html">
-          <span class="side-icon">ST</span>
+          <span class="side-icon" aria-hidden="true">ST</span>
           <span>Creator Studio</span>
         </a>
-        <a href="#" aria-disabled="true">
-          <span class="side-icon">MV</span>
+        <a href="#library" data-filter="movies">
+          <span class="side-icon" aria-hidden="true">MV</span>
           <span>Movies</span>
         </a>
-        <a href="#" aria-disabled="true">
-          <span class="side-icon">MU</span>
+        <a href="#library" data-filter="music">
+          <span class="side-icon" aria-hidden="true">MU</span>
           <span>Music</span>
         </a>
-        <a href="#" aria-disabled="true">
-          <span class="side-icon">CT</span>
+        <a href="#library" data-filter="categories">
+          <span class="side-icon" aria-hidden="true">CT</span>
           <span>Categories</span>
         </a>
       </nav>
       <div class="side-footer">
-        <div class="side-status">Premium HDR Â· Dolby Atmos</div>
+        <div class="side-status">Premium HDR · Dolby Atmos</div>
         <a href="/login.html" class="side-login">Login</a>
       </div>
     </aside>
@@ -57,14 +57,14 @@
       <header class="ott-header">
         <div class="ott-header-left">
           <div class="ott-pill">Premium OTT</div>
-          <nav class="ott-top-nav">
-            <a href="#" id="navHome" class="active">Home</a>
+                              <nav class="ott-top-nav">
+            <a href="#top" id="navHome" class="active" data-filter="home">Home</a>
             <a href="/live.html">Live TV</a>
-            <a href="#" id="navWebSeries">Web Series</a>
+            <a href="#library" id="navWebSeries" data-filter="webseries">Web Series</a>
             <a href="/studio.html" id="navStudio">Creator Studio</a>
-            <a href="#" id="navMovies">Movies</a>
-            <a href="#" id="navMusic">Music</a>
-            <a href="#" id="navCategories">Categories</a>
+            <a href="#library" id="navMovies" data-filter="movies">Movies</a>
+            <a href="#library" id="navMusic" data-filter="music">Music</a>
+            <a href="#library" id="navCategories" data-filter="categories">Categories</a>
           </nav>
         </div>
         <div class="ott-header-right" id="searchSection">
@@ -84,7 +84,7 @@
             <div class="premium-badge">Premium OTT Experience</div>
             <h1>NovaPlay</h1>
             <p>Stream cinematic originals, live TV, and curated premieres with studio-grade quality, all in one premium destination.</p>
-            <div class="premium-meta">4K HDR Â· Dolby Atmos Â· Multi-device streaming</div>
+            <div class="premium-meta">4K HDR · Dolby Atmos · Multi-device streaming</div>
           </div>
           <div class="premium-art" aria-label="Trending videos">
             <div class="trend-box" data-trend="1">
@@ -110,11 +110,26 @@
             </div>
           </div>
         </section>
+
+        <section class="ott-library" id="library" aria-label="NovaPlay video library">
+          <div class="library-head">
+            <div>
+              <h2 id="libraryTitle">All Videos</h2>
+              <p id="librarySubtitle">Browse everything available on NovaPlay.</p>
+            </div>
+            <div class="library-meta">
+              <span id="libraryCount">0 videos</span>
+            </div>
+          </div>
+          <div id="libraryContent" class="library-content">
+            <div class="library-empty" id="libraryEmpty">Loading videos...</div>
+          </div>
+        </section>
       </main>
 
       <footer class="ott-footer">
         <div>
-          <strong>NovaPlay</strong> Â© 2026 Â· Premium OTT streaming made cinematic.
+          <strong>NovaPlay</strong> © 2026 · Premium OTT streaming made cinematic.
         </div>
         <div class="footer-links">
           <a href="#top">Back to top</a>
@@ -128,3 +143,8 @@
   <script src="/script.js"></script>
 </body>
 </html>
+
+
+
+
+
