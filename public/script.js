@@ -45,6 +45,11 @@ if(trending && trending.children.length < 8){
 trending.innerHTML += card
 }
 
+const heroRow = document.getElementById("heroRow")
+if(heroRow && heroRow.children.length < 6){
+  heroRow.innerHTML += card
+}
+
 if(v.category === "movies" && movies){
 movies.innerHTML += card
 }
