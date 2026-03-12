@@ -59,9 +59,34 @@ function renderCategoryMovies(categoryKey='all'){
   })
 }
 
+function initSidebarAnchorActions(){
+  const searchInput = document.getElementById('search')
+  document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', event => {
+      event.preventDefault()
+      const target = anchor.getAttribute('href')
+      if (target === '#top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else if (target === '#searchSection' && searchInput) {
+        searchInput.focus({ preventScroll:true })
+      } else {
+        const el = document.querySelector(target)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    })
+  })
+}
+
 async function loadHomepage(){
   try{
     const res = await fetch('/api/videos')
+    if (res.status === 401) {
+      const categoryMovies = document.getElementById('categoryMovies')
+      const trending = document.getElementById('trendingVideos')
+      if (categoryMovies) categoryMovies.innerHTML = '<div class="empty-row">Login to see personalized content</div>'
+      if (trending) trending.innerHTML = '<div class="empty-row">Login to see trending videos</div>'
+      return
+    }
     const videos = await res.json()
 
     const trending = document.getElementById('trendingVideos')
@@ -130,6 +155,7 @@ async function loadHomepage(){
     renderCategoryMovies('all')
     renderLanguageCountryChips(videos)
     renderContinueWatching()
+    initSidebarAnchorActions()
   }catch(err){
     console.error('Homepage error:',err)
   }

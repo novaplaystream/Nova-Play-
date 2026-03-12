@@ -986,7 +986,15 @@ function isPublicPath(pathname) {
   if (pathname === "/favicon.ico") return true
   if (pathname.startsWith("/assets/")) return true
   if (pathname === "/google8e310517aefcb45c.html") return true
-  if (pathname.startsWith("/api/") && pathname !== "/api/me") return true
+
+  // Allow public homepage content to load for all users,
+  // while preserving login requirement for watch/play and admin APIs.
+  if (pathname === "/api/videos" || pathname === "/api/videos/trending" || pathname === "/api/live-tv" || pathname === "/api/categories" || pathname === "/api/languages") return true
+
+  // Keep /api/me private so client can check auth status for UI tweaks.
+  if (pathname === "/api/me") return false
+
+  // default: non-public paths require login
   return false
 }
 function deriveCategory(title) {
