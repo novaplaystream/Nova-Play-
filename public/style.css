@@ -635,30 +635,85 @@ opacity:.92;
   z-index:2;
 }
 
+.live-appbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:12px 16px;
+  flex-wrap:wrap;
+}
+
+.live-appbar .brand,
+.live-appbar .nav-links,
+.live-appbar .datetime {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.live-appbar .nav-links{gap:8px;}
+
+.nav-links a{
+  display:inline-flex;
+  min-width:80px;
+  justify-content:center;
+}
 .live-layout {
-  display:grid;
-  grid-template-columns: 1.3fr minmax(280px, 1fr);
+  display:flex;
+  flex-direction:row;
   gap: 20px;
   padding: 16px 20px 22px;
-  align-items: start;
+  align-items:flex-start;
+  justify-content:space-between;
   min-height: calc(100vh - 75px);
   max-height: calc(100vh - 75px);
-  overflow: hidden;
+  overflow:hidden;
 }
 
-.player-card,
-.list-panel {
-  height: calc(100vh - 130px);
-  overflow: hidden;
+.player-card {
+  flex: 2.2;
+  min-width: 55%;
+  height:100%;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+#playerStage {
+  height: calc(100% - 102px);
+  min-height: 480px;
+  max-height: 85vh;
+}
+
+.player-controls-compact {
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:8px;
 }
 
 .list-panel {
-  background: rgba(7, 12, 25, 0.82);
+  flex: 0.78;
+  min-width:260px;
+  max-width:360px;
+  height:100%;
+  overflow:auto;
+  background: rgba(7, 12, 25, 0.86);
   border: 1px solid rgba(119, 180, 255, 0.20);
   border-radius: 12px;
   padding: 12px;
-  overflow: auto;
 }
+
+.list-panel .panel-title,
+.list-panel .panel-status {
+  margin-bottom: 10px;
+}
+
+.list-panel .channel-list {
+  max-height: calc(100% - 140px);
+  overflow:auto;
+}
+
 
 #playerStage,
 #livePlayer,
