@@ -11,6 +11,32 @@ color:#eaf2ff;
 display:none !important;
 }
 
+.login-background-banner{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  background-image:linear-gradient(to bottom right, rgba(5,9,22,0.95), rgba(4,9,23,0.9)),
+    url('https://images.unsplash.com/photo-1523289333742-bee7e7a420f5?auto=format&fit=crop&w=1700&q=80');
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+  filter:saturate(1.14) brightness(0.56);
+}
+
+.admin-main,
+.admin-login-card,
+.admin-btn {
+  position:relative;
+  z-index:2;
+}
+
+.admin-login-card{
+  background:rgba(4,11,29,0.86);
+  border:1px solid rgba(116, 172, 254, 0.35);
+  box-shadow:0 20px 40px rgba(0,0,0,0.45);
+  backdrop-filter:blur(6px);
+}
+
 /* ===== TOP BAR ===== */
 
 .live-appbar{
