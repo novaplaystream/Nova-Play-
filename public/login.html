@@ -6,6 +6,30 @@
 <link rel="shortcut icon" href="/assets/novaplay-mark.svg">
 <link rel="stylesheet" href="/style.css">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+.login-background-banner {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: linear-gradient(to bottom right, rgba(5, 9, 22, 0.95), rgba(4, 9, 23, 0.9)),
+    url('https://images.unsplash.com/photo-1523289333742-bee7e7a420f5?auto=format&fit=crop&w=1700&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  filter: saturate(1.14) brightness(0.56);
+}
+.admin-body {
+  margin: 0;
+  font-family: Inter, system-ui;
+  background: transparent !important;
+  color: #eaf2ff;
+}
+.admin-main,
+.admin-login-card {
+  position: relative;
+  z-index: 2;
+}
+</style>
 </head>
 <body class="admin-body">
 <div class="login-background-banner"></div>
