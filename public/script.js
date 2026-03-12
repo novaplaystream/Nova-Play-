@@ -13,6 +13,75 @@ function revealAdminLink() {
   }
 }
 
+const authState = {
+  checked: false,
+  isLoggedIn: false
+}
+
+async function fetchAuthState() {
+  try {
+    const res = await fetch("/api/me")
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}))
+      authState.isLoggedIn = Boolean(data && data.email)
+    } else {
+      authState.isLoggedIn = false
+    }
+  } catch {
+    authState.isLoggedIn = false
+  }
+  authState.checked = true
+  return authState.isLoggedIn
+}
+
+function buildLoginRedirect(target) {
+  const safeTarget = target && String(target).startsWith("/") ? target : "/"
+  return `/login.html?redirect=${encodeURIComponent(safeTarget)}`
+}
+
+function redirectToLogin(target) {
+  location.href = buildLoginRedirect(target)
+}
+
+function attachLoginGate(el, target) {
+  if (!el) return
+  if (el.dataset.loginGateBound) return
+  el.dataset.loginGateBound = "1"
+  el.classList.toggle("login-gated", !authState.isLoggedIn)
+  el.addEventListener(
+    "click",
+    event => {
+      if (authState.isLoggedIn) return
+      event.preventDefault()
+      event.stopPropagation()
+      redirectToLogin(target)
+    },
+    true
+  )
+}
+
+function applyAuthStateToPage() {
+  document.body.classList.toggle("auth-locked", !authState.isLoggedIn)
+
+  const searchInput = document.getElementById("search")
+  const searchBtn = document.getElementById("btnSearch")
+  if (searchInput) {
+    searchInput.disabled = !authState.isLoggedIn
+    if (!authState.isLoggedIn) {
+      searchInput.placeholder = "Login to search..."
+    }
+  }
+  if (searchBtn) searchBtn.disabled = !authState.isLoggedIn
+
+  const gatedLinks = Array.from(document.querySelectorAll(".ott-top-nav a, .side-nav a, .footer-links a"))
+  gatedLinks.forEach(link => {
+    const href = link.getAttribute("href") || ""
+    if (href === "/login.html") return
+    if (link.classList.contains("side-login")) return
+    link.setAttribute("aria-disabled", authState.isLoggedIn ? "false" : "true")
+    attachLoginGate(link, href.startsWith("/") ? href : "/")
+  })
+}
 function getThumb(video) {
   if (!video) return ""
   if (video.thumbnailUrl) return video.thumbnailUrl
@@ -301,3 +370,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   revealAdminLink()
 })
+
+
+
+
+

@@ -3215,3 +3215,40 @@ opacity:.7;
 .live-sidebar .channel-list{
   min-height:180px;
 }
+/* ===== LOGIN GATE (HOMEPAGE) ===== */
+.auth-locked .login-gated{
+  opacity:0.75;
+}
+
+.auth-locked .login-gated:hover{
+  opacity:0.9;
+}
+
+.auth-locked .ott-top-nav a[aria-disabled="true"],
+.auth-locked .side-nav a[aria-disabled="true"],
+.auth-locked .footer-links a[aria-disabled="true"]{
+  pointer-events:auto;
+  cursor:pointer;
+}
+
+.auth-locked .search-group input:disabled,
+.auth-locked .search-group button:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
+.trend-box-featured::before{
+  content:"PLAY";
+  position:absolute;
+  top:12px;
+  right:12px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  letter-spacing:0.12em;
+  font-weight:700;
+  background:rgba(8, 20, 38, 0.85);
+  border:1px solid rgba(95, 208, 255, 0.55);
+  color:#bfe8ff;
+  z-index:3;
+}
