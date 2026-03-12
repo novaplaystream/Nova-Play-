@@ -738,12 +738,14 @@ async function playChannel(channel, options = {}) {
     return true
   }
 
-  if (channel.source === "youtubeVideo" && channel.videoId) {
+  const sourceType = String(channel.source || "").toLowerCase()
+
+  if (sourceType === "youtubevideo" && channel.videoId) {
     await playYouTube(channel.videoId, channel)
     return true
   }
 
-  if (channel.source === "hls") {
+  if (sourceType === "hls") {
     return playHls(channel, { attemptedKeys: nextAttempts, playToken, userInitiated })
   }
 

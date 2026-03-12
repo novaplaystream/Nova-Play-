@@ -652,7 +652,9 @@ async function playChannel(channel, options = {}) {
   const nextAttempts = new Set(attemptedKeys)
   nextAttempts.add(channelKey)
 
-  if (channel.source === "youtube" && channel.channelId) {
+  const sourceType = String(channel.source || "").toLowerCase()
+
+  if (sourceType === "youtube" && channel.channelId) {
     frameEl.src = `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channel.channelId)}&autoplay=1`
     frameEl.style.display = "block"
     nowPlayingEl.textContent = `Now Playing: ${channel.name}`
@@ -661,12 +663,12 @@ async function playChannel(channel, options = {}) {
     return true
   }
 
-  if (channel.source === "youtubeVideo" && channel.videoId) {
+  if (sourceType === "youtubevideo" && channel.videoId) {
     await playYouTube(channel.videoId, channel)
     return true
   }
 
-  if (channel.source === "hls") {
+  if (sourceType === "hls") {
     return playHls(channel, { attemptedKeys: nextAttempts, playToken, userInitiated })
   }
 
