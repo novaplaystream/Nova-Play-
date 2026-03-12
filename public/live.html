@@ -32,9 +32,9 @@
         <div class="hero-subtext">Hot Live Channels, 24x7 Streaming, Smart Auto-Skip</div>
       </div>
       <div id="playerStage" class="player-stage">
+        <div id="liveTag" class="live-tag">LIVE NovaPlay</div>
         <video id="livePlayer" controls autoplay playsinline></video>
         <iframe id="liveFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        <div class="player-brand-overlay">NovaPlay</div>
         <audio id="dubAudio"></audio>
         <div id="audioLangWrap" class="player-lang">
           <label for="audioLangSelect">Audio</label>
@@ -928,8 +928,36 @@ fsPrevBtn.addEventListener("click", () => playByOffset(-1))
 fsNextBtn.addEventListener("click", () => playByOffset(1))
 toggleFullscreenBtn.addEventListener("click", togglePlayerFullscreen)
 audioLangSelect.addEventListener("change", () => {
-  const lang = String(audioLangSelect.value || "original")
-  playDubAudio(dubChannelId, lang)
+  const selected = String(audioLangSelect.value || "original")
+
+  if (!selected || selected === "original") {
+    stopDubAudio()
+    if (hls && window.Hls && window.Hls.isSupported()) {
+      if (hls.audioTracks && hls.audioTracks.length > 0) {
+        hls.audioTrack = 0
+      }
+    } else if (videoEl && videoEl.audioTracks) {
+      Array.from(videoEl.audioTracks).forEach((track, idx) => { track.enabled = idx === 0 })
+    }
+    return
+  }
+
+  // Dub mode if matches a language token (e.g., "hi").
+  if (Array.isArray(dubAvailableLangs) && dubAvailableLangs.includes(selected)) {
+    playDubAudio(dubChannelId, selected)
+    return
+  }
+
+  // HLS/native audio track index selection
+  const index = Number(selected)
+  if (!Number.isNaN(index)) {
+    stopDubAudio()
+    if (hls && window.Hls && window.Hls.isSupported()) {
+      hls.audioTrack = index
+    } else if (videoEl && videoEl.audioTracks) {
+      Array.from(videoEl.audioTracks).forEach((track, idx) => { track.enabled = idx === index })
+    }
+  }
 })
 playerStage.addEventListener("dblclick", event => {
   if (event.target && event.target.closest && event.target.closest("button")) return
