@@ -164,11 +164,29 @@ opacity:.92;
 
 /* ===== MAIN LAYOUT ===== */
 
+.live-background-banner {
+  position:fixed;
+  inset:0;
+  z-index:0;
+  background-image: linear-gradient(to bottom, rgba(7, 22, 48, .85), rgba(2, 6, 20, .95)),
+    url('https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.1) brightness(0.65);
+}
+
 .live-layout{
 display:grid;
 grid-template-columns:1fr 360px;
 gap:16px;
 padding:16px;
+position:relative;
+z-index:1;
+}
+
+.live-appbar, .live-layout, .player-card, .channel-list, .hero-banner {
+  position:relative;
+  z-index:2;
 }
 
 
