@@ -318,7 +318,8 @@ function renderLibrary(filterKey) {
   const empty = document.getElementById("libraryEmpty")
   if (!content) return
 
-  const filtered = libraryState.videos.filter(info.test)
+  const availableVideos = libraryState.partitions?.[filterKey] || libraryState.videos
+  const filtered = availableVideos.filter(info.test)
   setLibraryHeader(filterKey, filtered.length)
 
   content.innerHTML = ""
@@ -343,10 +344,73 @@ function setActiveFilter(filterKey, scrollToLibrary) {
   filterLinks.forEach(link => {
     link.classList.toggle("active", link.dataset.filter === filterKey)
   })
+  
+  // Use partitioned videos for this filter
+  if (libraryState.partitions && libraryState.partitions[filterKey]) {
+    libraryState.videos = libraryState.partitions[filterKey]
+  }
+  
   renderLibrary(filterKey)
   if (scrollToLibrary) {
     document.getElementById("library")?.scrollIntoView({ behavior: "smooth" })
   }
+}
+
+async function partitionVideos(allVideos) {
+  const filters = LIBRARY_FILTERS
+  const partitioned = {}
+  const categoryVideos = {}
+  const used = new Set()
+
+  // Group and shuffle videos by category
+  allVideos.forEach(video => {
+    const cat = normalizeCategory(video) || 'general'
+    if (!categoryVideos[cat]) categoryVideos[cat] = []
+    categoryVideos[cat].push(video)
+  })
+
+  Object.values(categoryVideos).forEach(group => {
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[group[i], group[j]] = [group[j], group[i]]
+    }
+  })
+
+  // Assign unique videos to each filter (max 6 per filter)
+  Object.entries(filters).forEach(([filterKey, filterInfo]) => {
+    const available = []
+    
+    // Prioritize filter-specific videos
+    if (filterInfo.test !== LIBRARY_FILTERS.home.test) {
+      allVideos.forEach(video => {
+        if (!used.has(video.id) && filterInfo.test(video)) {
+          available.push(video)
+        }
+      })
+    }
+    
+    // Fill with general pool if needed
+    if (available.length < 6) {
+      Object.entries(categoryVideos).forEach(([cat, videos]) => {
+        for (const video of videos) {
+          if (!used.has(video.id) && available.length < 6) {
+            available.push(video)
+          }
+        }
+      })
+    }
+    
+    // Shuffle final selection
+    for (let i = available.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[available[i], available[j]] = [available[j], available[i]]
+    }
+    
+    partitioned[filterKey] = available.slice(0, 6)
+    available.slice(0, 6).forEach(video => used.add(video.id))
+  })
+  
+  return partitioned
 }
 
 async function loadLibraryVideos() {
@@ -356,7 +420,9 @@ async function loadLibraryVideos() {
     if (res.ok) {
       const data = await res.json().catch(() => [])
       if (Array.isArray(data)) {
-        libraryState.videos = data
+        const partitioned = await partitionVideos(data)
+        libraryState.videos = partitioned[libraryState.activeFilter] || []
+        libraryState.partitions = partitioned
       }
     }
   } catch {

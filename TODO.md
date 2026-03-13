@@ -1,22 +1,26 @@
-# NovaPlay Deployment Fix - TODO
+# NovaPlay Homepage Improvements - TODO
 
-## Plan Progress
-- [x] **Step 1**: Create `models/Comment.js` with Mongoose schema ✅
-- [x] **Step 2**: Test local server start (`node server.js`) ✅ Module fixed, MongoDB URI missing (expected locally)
-- [x] **Step 3**: Delete root `Comment.js` (redundant) ✅
-- [ ] **Step 4**: Verify MongoDB connection works (Render env)
-- [ ] **Step 5**: Commit & push changes
-- [ ] **Step 6**: Redeploy on Render.com & check logs
+## Approved Plan Steps (22px icons, 6 videos/category)
 
-## Current Status
-✅ **Critical module fix complete** - `require('./models/Comment')` now works  
-⚠️  Local Mongo timeouts expected (no MONGO_URI)  
-🔄 **Ready for deployment** - Render provides MONGO_URI env var
+### ✅ Step 1: Create this TODO.md [DONE]
 
-## Next Action
-1. Commit changes: `git add . && git commit -m "fix: add models/Comment.js (fix deployment)"`
-2. Push & redeploy Render  
-3. Check Render logs for successful start
+### ✅ Step 2: Update public/style.css [DONE]
+- Made .side-icon 22x22px, border-radius:50%
+- Added responsive hero banner fixes with max-width/padding
+- Mobile tooltip/padding adjustments
 
-**Status**: 3/6 complete
+### ✅ Step 3: Update public/script.js [DONE]
+- Added partitionVideos(): unique per category (6 max each), shuffling
+- Updated loadLibraryVideos(), setActiveFilter(), renderLibrary() to use partitions
+- Categories now show unique videos with variety
+
+### ✅ Step 4: Test changes [DONE]
+- Verified: `npx serve .`
+- Icons: round/small (22px, perfect)
+- Banner: responsive, no mobile overlap
+- Filters: unique videos per category, shuffled variety, no duplicates
+
+### ⬜ Step 5: Complete & demo
+- Run local preview command
+- attempt_completion
 
