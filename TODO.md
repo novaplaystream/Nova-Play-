@@ -12,5 +12,10 @@
 7. **Mobile test** - Ensure responsive sidebar.
 8. **attempt_completion** - Showcase with command.
 
-### Next Step: Edit style.css for glass icons + tooltips.
+### Next Step: ✅ Edit style.css for glass icons + tooltips (Done).
+
+**Progress: 3/8 steps complete**
+
+### Next Step: Edit public/index.html - Add `data-tooltip` to all sidebar links, refine icons.
+
 
