@@ -665,6 +665,15 @@ async function getCreatorChannelByEmail(email) {
   return Channel.findOne({ ownerEmail })
 }
 
+async function getUserVideos(email) {
+  const ownerEmail = String(email || "").trim().toLowerCase()
+  if (!ownerEmail) return []
+  const videos = await getVideos()
+  const channel = await getCreatorChannelByEmail(ownerEmail)
+  if (!channel) return []
+  return videos.filter(v => String(v.creatorEmail || "").toLowerCase() === ownerEmail || String(v.channelId || "") === channel.channelId)
+}
+
 async function getCreatorChannelById(channelId) {
   const id = String(channelId || "").trim()
   if (!id) return null
@@ -2936,9 +2945,8 @@ app.get(
   "/api/creator/videos",
   asyncHandler(async (req, res) => {
     const email = String(req.user?.email || "").toLowerCase()
-    const videos = await getVideos()
-    const mine = videos.filter(v => String(v.creatorEmail || "").toLowerCase() === email)
-    res.json(mine.map(v => ({ ...v, status: getVideoStatus(v), thumbnailUrl: getThumbnailUrl(v) })))
+    const userVideos = await getUserVideos(email)
+    res.json(userVideos.map(v => ({ ...v, status: getVideoStatus(v), thumbnailUrl: getThumbnailUrl(v) })))
   })
 )
 
