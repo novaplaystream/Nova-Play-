@@ -221,7 +221,7 @@ function buildVideoCard(video) {
   meta.className = "video-meta"
   const category = normalizeCategory(video) || "general"
   const language = String(video.language || "")
-  meta.textContent = [category, language].filter(Boolean).join(" · ")
+  meta.textContent = [category, language].filter(Boolean).join(" ï¿½ ")
 
   const action = document.createElement("button")
   action.className = "video-btn"
@@ -369,6 +369,23 @@ async function loadLibraryVideos() {
   renderLibrary(libraryState.activeFilter)
 }
 
+function syncSidebarNav() {
+  // Sync sidebar active state with top nav and URL hash
+  const activeFilter = libraryState.activeFilter || 'home';
+  const sidebarLinks = document.querySelectorAll('.side-nav a[data-filter]');
+  const topNavLinks = document.querySelectorAll('.ott-top-nav a[data-filter]');
+  
+  sidebarLinks.forEach(link => {
+    const filter = link.dataset.filter;
+    link.classList.toggle('active', filter === activeFilter);
+  });
+  
+  topNavLinks.forEach(link => {
+    const filter = link.dataset.filter;
+    link.classList.toggle('active', filter === activeFilter);
+  });
+}
+
 function setupLibraryNav() {
   const filterLinks = document.querySelectorAll("[data-filter]")
   filterLinks.forEach(link => {
@@ -377,8 +394,22 @@ function setupLibraryNav() {
       if (!filterKey) return
       event.preventDefault()
       setActiveFilter(filterKey, filterKey !== "home")
+      syncSidebarNav();
+      // Update URL hash without page reload
+      history.replaceState(null, null, `#${filterKey === 'home' ? 'top' : 'library'}`);
     })
   })
+
+  // Sidebar specific links (Live TV, Creator Studio)
+  const sidebarActionLinks = document.querySelectorAll('.side-nav a:not([data-filter])');
+  sidebarActionLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      // Clear library filter when navigating away
+      if (libraryState.activeFilter && libraryState.activeFilter !== 'home') {
+        setActiveFilter('home', false);
+      }
+    });
+  });
 
   const hash = location.hash.replace("#", "")
   if (LIBRARY_FILTERS[hash]) {
@@ -386,6 +417,8 @@ function setupLibraryNav() {
   } else {
     setActiveFilter("home", false)
   }
+  
+  syncSidebarNav();
 }
 
 async function initHome() {
