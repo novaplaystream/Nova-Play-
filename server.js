@@ -619,7 +619,7 @@ function parseLiveTvLogo(channel) {
   return buildFaviconLogoFromWebsite(channel?.website)
 }
 
-$0function parseCreatorVideoUrl(urlValue) {
+function parseCreatorVideoUrl(urlValue) {
   const raw = String(urlValue || "").trim()
   if (!raw) return { source: "", videoId: "", playbackUrl: "" }
 
@@ -3727,6 +3727,7 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
 
 
 
