@@ -149,16 +149,14 @@ display:none !important;
 
 .app-header a{color:inherit;}
 
-}
-
 .brand img{
-width:28px;
-height:28px;
+  width:28px;
+  height:28px;
 }
 
 .brand-title{
-font-size:20px;
-font-weight:700;
+  font-size:20px;
+  font-weight:700;
 }
 
 
