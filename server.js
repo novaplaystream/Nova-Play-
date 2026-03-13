@@ -11,6 +11,7 @@ const fsSync = require("fs")
 const { getTrendingVideos } = require("./lib/trending")
 const mongoose = require("mongoose")
 const Video = require("./models/Video")
+const Comment = require("./models/Comment")
 const Channel = require("./models/Channel")
 const YOUTUBE_KEYS = [
   process.env.YOUTUBE_API_KEY,
@@ -31,7 +32,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 const app = express()
 
-const COMMENTS_FILE = path.join(__dirname, "database", "comments.json")
 const FAVORITES_FILE = path.join(__dirname, "favorites.json")
 const DUBBING_JOBS_FILE = path.join(__dirname, "dubbing-jobs.json")
 
@@ -1681,16 +1681,11 @@ async function writeJsonQueued(filePath, data) {
 async function getVideos() {
   return await Video.find({})
 }
-
 async function saveVideos(videos) {
   await Video.insertMany(videos, { ordered: false })
 }
 async function getComments() {
-  return readJson(COMMENTS_FILE, [])
-}
-
-async function saveComments(comments) {
-  await writeJsonQueued(COMMENTS_FILE, comments)
+  return await Comment.find({}).sort({ createdAt: -1 });
 }
 
 async function getFavorites() {
@@ -3510,8 +3505,7 @@ app.get(
     "/api/comments/:id",
     asyncHandler(async (req, res) => {
       const id = parsePositiveInt(req.params.id, "video id")
-      const comments = await getComments()
-      const videoComments = comments.filter(c => Number(c.videoId) === id)
+      const videoComments = await Comment.find({ videoId: id }).sort({ createdAt: -1 });
       res.json(videoComments)
     })
   )
@@ -3519,25 +3513,17 @@ app.get(
   app.post(
     "/api/comments",
     asyncHandler(async (req, res) => {
+      const author = req.user?.email || "Anonymous";
       const videoId = parsePositiveInt(req.body.videoId, "video id")
       const text = normalizeString(req.body.text, "text", 500)
 
-      const [videos, comments] = await Promise.all([getVideos(), getComments()])
-      const video = videos.find(v => Number(v.id) === videoId && v.approved && !v.rejected)
+      const video = await Video.findOne({ id: videoId, approved: true, rejected: false });
       if (!video) {
         throw createHttpError(404, "Video not found")
       }
 
-      const newComment = {
-        id: Date.now(),
-        videoId,
-        text,
-        createdAt: nowIso()
-      }
-
-      comments.push(newComment)
-      await saveComments(comments)
-      res.status(201).json(newComment)
+      const createdComment = await Comment.create({ videoId, text, author });
+      res.status(201).json(createdComment);
     })
   )
 
@@ -4025,341 +4011,3 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

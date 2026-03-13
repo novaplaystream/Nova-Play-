@@ -1,8 +1,8 @@
 const mongoose = require("mongoose")
 
 const videoSchema = new mongoose.Schema({
-  title: String,
-  videoId: { type: String, unique: true },
+  title: { type: String, required: true },
+  videoId: { type: String, index: true },
   views: Number,
   likes: Number,
   category: String,
@@ -11,7 +11,7 @@ const videoSchema = new mongoose.Schema({
   tags: [String],
   hashtags: [String],
   thumbnailUrl: String,
-  source: String,
+  source: { type: String, index: true },
   approved: Boolean,
   homepage: Boolean,
   rejected: Boolean,
@@ -24,12 +24,13 @@ const videoSchema = new mongoose.Schema({
   moderationStatus: String,
   moderationReason: String,
   country: String,
-  createdAt: String,
-  updatedAt: String,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
   creatorEmail: String,
   creatorChannelId: String,
   creatorChannelName: String
 })
 
-module.exports = mongoose.model("Video", videoSchema)
+videoSchema.index({ source: 1, videoId: 1 }, { unique: true, partialFilterExpression: { videoId: { $type: "string", $ne: "" } } })
 
+module.exports = mongoose.model("Video", videoSchema)
