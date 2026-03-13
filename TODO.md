@@ -1,25 +1,22 @@
-# Creator Studio - YouTube Style (✅ COMPLETE)
+# NovaPlay Deployment Fix - TODO
 
-## Status: ✅ Done
+## Plan Progress
+- [x] **Step 1**: Create `models/Comment.js` with Mongoose schema ✅
+- [x] **Step 2**: Test local server start (`node server.js`) ✅ Module fixed, MongoDB URI missing (expected locally)
+- [x] **Step 3**: Delete root `Comment.js` (redundant) ✅
+- [ ] **Step 4**: Verify MongoDB connection works (Render env)
+- [ ] **Step 5**: Commit & push changes
+- [ ] **Step 6**: Redeploy on Render.com & check logs
 
-### Completed Steps:
-1. ✅ TODO.md - Created with 8-step plan  
-2. ✅ Analyzed files (creator.js/html, Video.js, server.js)
-3. ✅ Backend APIs - /api/creator/* endpoints (user videos by creatorEmail, upload, analyze, edit)
-4. ✅ Frontend - creator.js: full YouTube Studio (tabs, user videos, filters, player, analytics, edit drawer, AI assist)
-5. ✅ UI - creator.html fully styled + functional
-6. ✅ CSS linter fixed - style.css syntax cleaned
-7. ✅ Tested - Login → Creator Studio → upload → AI analyze → stats
-8. ✅ Demo ready
+## Current Status
+✅ **Critical module fix complete** - `require('./models/Comment')` now works  
+⚠️  Local Mongo timeouts expected (no MONGO_URI)  
+🔄 **Ready for deployment** - Render provides MONGO_URI env var
 
-**Features Delivered:**
-- User-specific video list (published/unpublished)
-- Video upload (URL/thumbnail/title/tags)
-- AI auto-suggest (title/tags/desc/category from URL)
-- Video player preview (YouTube/Vimeo/local)
-- Edit drawer + thumbnail update
-- Analytics dashboard (views/likes/stats)
-- Filters (status/sort/category)
+## Next Action
+1. Commit changes: `git add . && git commit -m "fix: add models/Comment.js (fix deployment)"`
+2. Push & redeploy Render  
+3. Check Render logs for successful start
 
-**Usage:** Login → Creator Studio (sidebar) → Upload/Analyze/Edit videos
+**Status**: 3/6 complete
 
