@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -12,59 +12,100 @@
 </head>
 <body class="ott-body" data-page="home">
   <div class="ott-shell">
-    <aside class="ott-sidebar sidebar">
-      <a href="/" class="ott-brand">
+    <aside class="ott-sidebar">
+      <a href="/" class="ott-brand" aria-label="NovaPlay Home">
         <img src="/assets/novaplay-mark.svg" alt="NovaPlay">
-        <span>NovaPlay</span>
       </a>
-                  <nav class="side-nav">
-        <a href="#top" class="active" data-filter="home">
-          <span class="side-icon" aria-hidden="true">NP</span>
-          <span>Home</span>
+      <nav class="side-nav" aria-label="Primary">
+        <a href="#top" class="active" data-filter="home" aria-label="Home" data-label="Home">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 10.5L12 3l9 7.5"></path>
+              <path d="M5 10.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9.5"></path>
+            </svg>
+          </span>
         </a>
-        <a href="/live.html">
-          <span class="side-icon" aria-hidden="true">LV</span>
-          <span>Live TV</span>
+        <a href="/live.html" aria-label="Live TV" data-label="Live TV">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="7" width="18" height="12" rx="2"></rect>
+              <path d="M7 3l5 4 5-4"></path>
+              <path d="M10 12l4 3-4 3z" fill="currentColor" stroke="none"></path>
+            </svg>
+          </span>
         </a>
-        <a href="#library" data-filter="webseries">
-          <span class="side-icon" aria-hidden="true">WS</span>
-          <span>Web Series</span>
+        <a href="#library" data-filter="trending" aria-label="Trending" data-label="Trending">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 17l6-6 4 4 7-7"></path>
+              <path d="M14 4h7v7"></path>
+            </svg>
+          </span>
         </a>
-        <a href="/creator.html">
-          <span class="side-icon" aria-hidden="true">ST</span>
-          <span>Creator Studio</span>
+        <a href="#library" data-filter="movies" aria-label="Movie" data-label="Movie">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <path d="M7 3v18"></path>
+              <path d="M17 3v18"></path>
+              <path d="M3 7h18"></path>
+              <path d="M3 17h18"></path>
+            </svg>
+          </span>
         </a>
-        <a href="#library" data-filter="movies">
-          <span class="side-icon" aria-hidden="true">MV</span>
-          <span>Movies</span>
+        <a href="#library" data-filter="music" aria-label="Music" data-label="Music">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="7" cy="19" r="3"></circle>
+              <circle cx="19" cy="16" r="3"></circle>
+            </svg>
+          </span>
         </a>
-        <a href="#library" data-filter="music">
-          <span class="side-icon" aria-hidden="true">MU</span>
-          <span>Music</span>
+        <a href="#library" data-filter="comedy" aria-label="Comedy" data-label="Comedy">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M8 10h.01"></path>
+              <path d="M16 10h.01"></path>
+              <path d="M8 15c1.2 1 2.6 1.5 4 1.5s2.8-.5 4-1.5"></path>
+            </svg>
+          </span>
         </a>
-        <a href="#library" data-filter="categories">
-          <span class="side-icon" aria-hidden="true">CT</span>
-          <span>Categories</span>
+        <a href="#library" data-filter="webseries" aria-label="Web Series" data-label="Web Series">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            </svg>
+          </span>
+        </a>
+        <a href="/creator.html" aria-label="Creator Studio" data-label="Creator Studio">
+          <span class="side-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="7" width="12" height="10" rx="2"></rect>
+              <path d="M15 9l6-3v12l-6-3"></path>
+            </svg>
+          </span>
         </a>
       </nav>
-      <div class="side-footer">
-        <div class="side-status">Premium HDR · Dolby Atmos</div>
-        <a href="/login.html" class="side-login">Login</a>
-      </div>
     </aside>
 
     <div class="ott-main">
       <header class="ott-header">
         <div class="ott-header-left">
           <div class="ott-pill">Premium OTT</div>
-                              <nav class="ott-top-nav">
+          <nav class="ott-top-nav">
             <a href="#top" id="navHome" class="active" data-filter="home">Home</a>
             <a href="/live.html">Live TV</a>
+            <a href="#library" id="navTrending" data-filter="trending">Trending</a>
+            <a href="#library" id="navMovies" data-filter="movies">Movie</a>
+            <a href="#library" id="navMusic" data-filter="music">Music</a>
+            <a href="#library" id="navComedy" data-filter="comedy">Comedy</a>
             <a href="#library" id="navWebSeries" data-filter="webseries">Web Series</a>
             <a href="/creator.html" id="navStudio">Creator Studio</a>
-            <a href="#library" id="navMovies" data-filter="movies">Movies</a>
-            <a href="#library" id="navMusic" data-filter="music">Music</a>
-            <a href="#library" id="navCategories" data-filter="categories">Categories</a>
           </nav>
         </div>
         <div class="ott-header-right" id="searchSection">
@@ -84,7 +125,7 @@
             <div class="premium-badge">Premium OTT Experience</div>
             <h1>NovaPlay</h1>
             <p>Stream cinematic originals, live TV, and curated premieres with studio-grade quality, all in one premium destination.</p>
-            <div class="premium-meta">4K HDR · Dolby Atmos · Multi-device streaming</div>
+            <div class="premium-meta">4K HDR Â· Dolby Atmos Â· Multi-device streaming</div>
           </div>
           <div class="premium-art" aria-label="Trending videos">
             <div class="trend-box" data-trend="1">
@@ -129,7 +170,7 @@
 
       <footer class="ott-footer">
         <div>
-          <strong>NovaPlay</strong> © 2026 · Premium OTT streaming made cinematic.
+          <strong>NovaPlay</strong> Â© 2026 Â· Premium OTT streaming made cinematic.
         </div>
         <div class="footer-links">
           <a href="#top">Back to top</a>
@@ -143,10 +184,3 @@
   <script src="/script.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-

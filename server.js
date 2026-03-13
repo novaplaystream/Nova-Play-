@@ -1126,6 +1126,212 @@ function deriveLanguage(title) {
   if (text.includes("russian")) return "ru"
   return "en"
 }
+
+const TAG_STOP_WORDS = new Set([
+  "the","a","an","and","or","to","of","in","for","with","on","at","from","by","this","that","it","is","are","be","as",
+  "video","official","full","hd","new","latest","song","songs","music","trailer","movie","movies",
+  "ka","ke","ki","hai","ho","se","aur","mein","me","hum","aap","tum","ye","woh"
+])
+
+function normalizeTagList(input, maxItems = 12, maxLen = 40) {
+  const raw = Array.isArray(input)
+    ? input
+    : (typeof input === "string" ? input.split(/[,#\n]/) : [])
+  const seen = new Set()
+  const out = []
+  for (const item of raw) {
+    const cleaned = String(item || "").replace(/[#]/g, "").trim()
+    if (!cleaned) continue
+    const safe = cleaned.replace(/\s+/g, " ").slice(0, maxLen)
+    const key = safe.toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(safe)
+    if (out.length >= maxItems) break
+  }
+  return out
+}
+
+function normalizeHashtagList(input, maxItems = 8, maxLen = 30) {
+  let raw = []
+  if (Array.isArray(input)) {
+    raw = input
+  } else if (typeof input === "string") {
+    const matches = input.match(/#[\w-]+/g)
+    raw = matches && matches.length ? matches : input.split(/[,\s]+/)
+  }
+  const seen = new Set()
+  const out = []
+  for (const item of raw) {
+    let value = String(item || "").trim()
+    if (!value) continue
+    if (!value.startsWith("#")) value = `#${value}`
+    value = "#" + value.slice(1).replace(/[^\w-]/g, "").slice(0, maxLen)
+    if (value.length <= 1) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(value)
+    if (out.length >= maxItems) break
+  }
+  return out
+}
+
+function extractKeywords(text, limit = 10) {
+  const cleaned = String(text || "")
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/[^a-z0-9\u0900-\u097F\s]/g, " ")
+  const tokens = cleaned.split(/\s+/).filter(Boolean)
+  const counts = new Map()
+  for (const token of tokens) {
+    if (token.length < 3) continue
+    if (TAG_STOP_WORDS.has(token)) continue
+    counts.set(token, (counts.get(token) || 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([word]) => word)
+}
+
+function buildHashtagsFromTags(tags, limit = 6) {
+  if (!Array.isArray(tags)) return []
+  const raw = tags.map(tag => `#${String(tag || "").replace(/\s+/g, "")}`)
+  return normalizeHashtagList(raw, limit, 24)
+}
+
+const YOUTUBE_CATEGORY_MAP = {
+  "1": "movies",
+  "2": "general",
+  "10": "music",
+  "15": "general",
+  "17": "sports",
+  "18": "movies",
+  "19": "travel",
+  "20": "gaming",
+  "21": "general",
+  "22": "general",
+  "23": "general",
+  "24": "general",
+  "25": "news",
+  "26": "education",
+  "27": "education",
+  "28": "technology",
+  "29": "general",
+  "30": "movies",
+  "31": "movies",
+  "32": "movies",
+  "33": "movies",
+  "34": "movies",
+  "35": "general",
+  "36": "general",
+  "37": "general",
+  "38": "general",
+  "39": "general",
+  "40": "general",
+  "41": "general",
+  "42": "general",
+  "43": "general",
+  "44": "general"
+}
+
+function mapYouTubeCategoryId(categoryId) {
+  const key = String(categoryId || "")
+  return YOUTUBE_CATEGORY_MAP[key] || ""
+}
+
+async function fetchYouTubeSnippet(videoId, apiKey) {
+  if (!videoId || !apiKey) return null
+  const url = new URL(YOUTUBE_VIDEOS_URL)
+  url.searchParams.set("key", apiKey)
+  url.searchParams.set("part", "snippet")
+  url.searchParams.set("id", String(videoId))
+  const res = await fetch(url.toString())
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return null
+  const item = Array.isArray(data.items) ? data.items[0] : null
+  if (!item || !item.snippet) return null
+  const snippet = item.snippet
+  const thumbnails = snippet.thumbnails || {}
+  const thumb =
+    thumbnails.maxres?.url ||
+    thumbnails.high?.url ||
+    thumbnails.medium?.url ||
+    thumbnails.default?.url ||
+    ""
+  return {
+    title: String(snippet.title || ""),
+    description: String(snippet.description || ""),
+    tags: Array.isArray(snippet.tags) ? snippet.tags : [],
+    categoryId: String(snippet.categoryId || ""),
+    thumbnailUrl: String(thumb || "")
+  }
+}
+
+function buildFallbackDescription(title, tags) {
+  const safeTitle = String(title || "Untitled video")
+  const safeTags = Array.isArray(tags) && tags.length ? tags.slice(0, 6).join(", ") : ""
+  if (safeTags) {
+    return `Watch "${safeTitle}" on NovaPlay.\n\nTags: ${safeTags}`
+  }
+  return `Watch "${safeTitle}" on NovaPlay.`
+}
+
+async function buildCreatorAIAssist(payload) {
+  const title = String(payload?.title || "").trim()
+  const description = String(payload?.description || "").trim()
+  const url = String(payload?.url || "").trim()
+  const thumbnailUrl = String(payload?.thumbnailUrl || "").trim()
+  const category = String(payload?.category || "").trim().toLowerCase()
+  const language = String(payload?.language || "").trim().toLowerCase()
+
+  const parsed = parseCreatorVideoUrl(url)
+  let youtubeSnippet = null
+
+  if (parsed.source === "youtube" && parsed.videoId) {
+    const apiKey = getYouTubeKey()
+    if (apiKey) {
+      youtubeSnippet = await fetchYouTubeSnippet(parsed.videoId, apiKey).catch(() => null)
+    }
+  }
+
+  const resolvedTitle = title || youtubeSnippet?.title || "Untitled video"
+  const resolvedDescription = description || youtubeSnippet?.description || ""
+  const seedText = `${resolvedTitle} ${resolvedDescription}`.trim()
+
+  const resolvedCategory = category || mapYouTubeCategoryId(youtubeSnippet?.categoryId) || deriveCategory(seedText)
+  const resolvedLanguage = language || deriveLanguage(seedText)
+
+  let resolvedTags = normalizeTagList(youtubeSnippet?.tags || [], 12, 40)
+  if (resolvedTags.length === 0) {
+    resolvedTags = normalizeTagList(extractKeywords(seedText, 10), 12, 40)
+  }
+
+  const resolvedHashtags = buildHashtagsFromTags(resolvedTags, 8)
+
+  const resolvedThumbnail =
+    thumbnailUrl ||
+    youtubeSnippet?.thumbnailUrl ||
+    (parsed.videoId ? `https://img.youtube.com/vi/${parsed.videoId}/hqdefault.jpg` : "")
+
+  const finalDescription = resolvedDescription || buildFallbackDescription(resolvedTitle, resolvedTags)
+
+  return {
+    source: parsed.source || "local",
+    videoId: parsed.videoId || "",
+    usedYouTube: Boolean(youtubeSnippet),
+    suggested: {
+      title: resolvedTitle,
+      description: finalDescription,
+      tags: resolvedTags,
+      hashtags: resolvedHashtags,
+      category: resolvedCategory || "general",
+      language: resolvedLanguage || "en",
+      thumbnailUrl: resolvedThumbnail
+    }
+  }
+}
 function getAdultRiskSignals(video) {
   const text = [
     String(video?.title || ""),
@@ -1235,6 +1441,9 @@ function normalizeVideo(video, fallbackId) {
     source,
     language: String(rawVideo.language || deriveLanguage(rawVideo.title || "")),
     category: String(rawVideo.category || deriveCategory(rawVideo.title || "")),
+    description: String(rawVideo.description || ""),
+    tags: normalizeTagList(rawVideo.tags || [], 12, 40),
+    hashtags: normalizeHashtagList(rawVideo.hashtags || [], 8, 30),
     thumbnailUrl: String(rawVideo.thumbnailUrl || ""),
     playbackUrl: String(rawVideo.playbackUrl || ""),
     publishedAt: String(rawVideo.publishedAt || ""),
@@ -1272,7 +1481,7 @@ function getThumbnailUrl(video) {
   return ""
 }
 
-function toPendingVideo({ title, videoId, views, likes, source, thumbnailUrl, playbackUrl, language, category, channelId, channelName, subscriberCount }) {
+function toPendingVideo({ title, videoId, views, likes, source, thumbnailUrl, playbackUrl, language, category, description, tags, hashtags, channelId, channelName, subscriberCount }) {
   const normalizedTitle = String(title || "Untitled video")
   return {
     title: normalizedTitle,
@@ -1282,6 +1491,9 @@ function toPendingVideo({ title, videoId, views, likes, source, thumbnailUrl, pl
     source: String(source || "local"),
     language: String(language || deriveLanguage(normalizedTitle)),
     category: String(category || deriveCategory(normalizedTitle)),
+    description: String(description || ""),
+    tags: normalizeTagList(tags || [], 12, 40),
+    hashtags: normalizeHashtagList(hashtags || [], 8, 30),
     channelId: String(channelId || ""),
     channelName: String(channelName || ""),
     subscriberCount: Math.max(0, Number(subscriberCount) || 0),
@@ -2744,6 +2956,9 @@ app.post(
     const category = typeof req.body.category === "string" ? req.body.category.trim().slice(0, 60) : ""
     const language = typeof req.body.language === "string" ? req.body.language.trim().slice(0, 40) : ""
     const thumbnailUrl = typeof req.body.thumbnailUrl === "string" ? req.body.thumbnailUrl.trim().slice(0, 1200) : ""
+    const description = typeof req.body.description === "string" ? req.body.description.trim().slice(0, 2000) : ""
+    const tags = normalizeTagList(req.body.tags || req.body.tag || "", 12, 40)
+    const hashtags = normalizeHashtagList(req.body.hashtags || req.body.hashTags || "", 8, 30)
 
     const parsed = parseCreatorVideoUrl(url)
     if (!parsed.videoId && !parsed.playbackUrl) {
@@ -2771,6 +2986,9 @@ app.post(
       playbackUrl: parsed.playbackUrl,
       language,
       category,
+      description,
+      tags,
+      hashtags,
       channelId: channel.channelId,
       channelName: channel.name,
       subscriberCount: 0
@@ -2787,6 +3005,78 @@ app.post(
     res.status(201).json(pending)
   })
 )
+
+  app.post(
+    "/api/creator/analyze",
+    asyncHandler(async (req, res) => {
+      const payload = {
+        title: typeof req.body.title === "string" ? req.body.title.trim().slice(0, 200) : "",
+        description: typeof req.body.description === "string" ? req.body.description.trim().slice(0, 2000) : "",
+        url: typeof req.body.url === "string" ? req.body.url.trim().slice(0, 1200) : "",
+        thumbnailUrl: typeof req.body.thumbnailUrl === "string" ? req.body.thumbnailUrl.trim().slice(0, 1200) : "",
+        category: typeof req.body.category === "string" ? req.body.category.trim().slice(0, 60) : "",
+        language: typeof req.body.language === "string" ? req.body.language.trim().slice(0, 40) : ""
+      }
+
+      const analysis = await buildCreatorAIAssist(payload)
+      res.json(analysis)
+    })
+  )
+
+  app.patch(
+    "/api/creator/video/:id",
+    asyncHandler(async (req, res) => {
+      const id = parsePositiveInt(req.params.id, "video id")
+      const email = String(req.user?.email || "").trim().toLowerCase()
+
+      const updates = {}
+      if (typeof req.body.title === "string" && req.body.title.trim()) {
+        updates.title = req.body.title.trim().slice(0, 200)
+      }
+      if (typeof req.body.description === "string") {
+        updates.description = req.body.description.trim().slice(0, 2000)
+      }
+      if (typeof req.body.category === "string") {
+        updates.category = req.body.category.trim().slice(0, 60).toLowerCase()
+      }
+      if (typeof req.body.language === "string") {
+        updates.language = req.body.language.trim().slice(0, 40).toLowerCase()
+      }
+      if (typeof req.body.thumbnailUrl === "string") {
+        updates.thumbnailUrl = req.body.thumbnailUrl.trim().slice(0, 1200)
+      }
+      if (req.body.tags !== undefined) {
+        updates.tags = normalizeTagList(req.body.tags, 12, 40)
+      }
+      if (req.body.hashtags !== undefined) {
+        updates.hashtags = normalizeHashtagList(req.body.hashtags, 8, 30)
+      }
+
+      if (Object.keys(updates).length === 0) {
+        throw createHttpError(400, "No updates provided")
+      }
+
+      updates.updatedAt = nowIso()
+
+      const updated = await Video.findOneAndUpdate(
+        { id, creatorEmail: email },
+        { $set: updates },
+        { new: true }
+      )
+
+      if (!updated) {
+        throw createHttpError(404, "Video not found")
+      }
+
+      res.json({
+        video: {
+          ...updated.toObject(),
+          status: getVideoStatus(updated),
+          thumbnailUrl: getThumbnailUrl(updated)
+        }
+      })
+    })
+  )
 
   app.use(express.static("public"))
 
@@ -3727,6 +4017,12 @@ if (require.main === module) {
 }
 
 module.exports = { createApp }
+
+
+
+
+
+
 
 
 

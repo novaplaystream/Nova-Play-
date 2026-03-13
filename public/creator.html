@@ -8,23 +8,93 @@
   <link rel="shortcut icon" href="/assets/novaplay-mark.svg">
   <link rel="stylesheet" href="/style.css">
   <style>
-    .creator-shell { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
-    .creator-card { background: rgba(12, 20, 40, 0.9); border: 1px solid rgba(95, 165, 255, 0.2); border-radius: 16px; padding: 16px; }
-    .creator-card h3 { margin-top: 0; }
-    .creator-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    .creator-row input, .creator-row textarea, .creator-row select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(7, 12, 28, 0.85); color: #eaf2ff; }
-    .creator-row textarea { min-height: 90px; resize: vertical; }
+    .creator-shell { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .creator-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 22px; background: linear-gradient(135deg, rgba(12, 22, 48, 0.95), rgba(6, 12, 26, 0.95)); border: 1px solid rgba(95, 165, 255, 0.25); box-shadow: 0 24px 50px rgba(0,0,0,0.45); display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 18px; }
+    .creator-hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 10% 20%, rgba(95, 208, 255, 0.2), transparent 50%), radial-gradient(circle at 80% 10%, rgba(74, 107, 255, 0.2), transparent 55%); pointer-events: none; }
+    .creator-hero-content { position: relative; z-index: 1; }
+    .creator-eyebrow { font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(150, 195, 255, 0.85); font-weight: 700; }
+    .creator-hero h2 { margin: 10px 0 8px; font-size: 28px; }
+    .creator-subtitle { color: rgba(210, 225, 255, 0.82); margin: 0; max-width: 560px; }
+    .creator-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+    .creator-stat { background: rgba(10, 18, 36, 0.85); border: 1px solid rgba(95, 165, 255, 0.2); border-radius: 14px; padding: 12px; }
+    .creator-stat span { display: block; }
+    .creator-stat .label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(160, 200, 255, 0.8); }
+    .creator-stat .value { font-size: 22px; font-weight: 700; color: #f2f6ff; margin-top: 6px; }
+    .creator-hero-actions { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 10px; min-width: 160px; }
+
+    .creator-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start; }
+    .creator-nav { position: sticky; top: 90px; align-self: start; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: rgba(7, 12, 26, 0.9); border-radius: 18px; border: 1px solid rgba(95, 165, 255, 0.2); box-shadow: 0 18px 36px rgba(0,0,0,0.35); }
+    .creator-nav button { border: 1px solid rgba(95, 165, 255, 0.2); background: transparent; color: #cfe3ff; padding: 10px 12px; border-radius: 12px; font-weight: 700; cursor: pointer; text-align: left; transition: all .2s ease; }
+    .creator-nav button:hover { border-color: rgba(95, 208, 255, 0.6); background: rgba(20, 32, 58, 0.7); }
+    .creator-nav button.active { background: linear-gradient(135deg, rgba(95, 208, 255, 0.35), rgba(74, 107, 255, 0.35)); border-color: rgba(95, 208, 255, 0.9); color: #fff; }
+
+    .creator-main { display: flex; flex-direction: column; gap: 18px; }
+    .creator-section { display: none; }
+    .creator-section.active { display: block; }
+
+    .creator-card { background: rgba(10, 18, 36, 0.9); border: 1px solid rgba(95, 165, 255, 0.2); border-radius: 18px; padding: 16px; box-shadow: 0 18px 36px rgba(0,0,0,0.35); }
+    .creator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .creator-row { display: grid; grid-template-columns: 72px 2.2fr 1fr 1fr 0.9fr 0.9fr 1.2fr; gap: 12px; align-items: center; padding: 12px; border-radius: 14px; border: 1px solid rgba(95, 165, 255, 0.16); background: rgba(8, 14, 28, 0.85); }
+    .creator-row.header { text-transform: uppercase; letter-spacing: 0.2em; font-size: 10px; color: rgba(160, 200, 255, 0.85); background: rgba(12, 20, 42, 0.95); }
+    .creator-thumb { width: 72px; height: 44px; border-radius: 10px; background: #0b1326; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.08); }
+    .creator-title { font-weight: 700; color: #f2f6ff; }
+    .creator-meta { font-size: 12px; color: rgba(180, 200, 240, 0.8); margin-top: 4px; }
+    .creator-cell.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mini-btn { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(95, 165, 255, 0.3); background: rgba(12, 22, 46, 0.85); color: #d8e8ff; cursor: pointer; font-size: 12px; font-weight: 700; }
+    .mini-btn.primary { background: linear-gradient(135deg, rgba(95, 208, 255, 0.45), rgba(74, 107, 255, 0.5)); color: #061124; }
+
+    .creator-row input, .creator-row textarea, .creator-row select,
+    .creator-card input, .creator-card textarea, .creator-card select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(7, 12, 28, 0.85); color: #eaf2ff; }
+    .creator-card textarea { min-height: 90px; resize: vertical; }
     .creator-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .creator-status { margin-top: 10px; font-size: 13px; color: #9be29b; }
     .creator-status.error { color: #ff8a80; }
-    .creator-videos { margin-top: 18px; }
-    .creator-videos .video-card { cursor: default; }
-    .creator-videos .video-btn { cursor: pointer; }
-    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
     .status-pending { background: rgba(255, 200, 90, 0.2); color: #ffd37a; border: 1px solid rgba(255, 200, 90, 0.3); }
     .status-approved { background: rgba(100, 220, 150, 0.2); color: #8fe8b5; border: 1px solid rgba(100, 220, 150, 0.3); }
     .status-rejected { background: rgba(255, 110, 110, 0.2); color: #ff9f9f; border: 1px solid rgba(255, 110, 110, 0.3); }
+
+    .creator-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .creator-filters input { flex: 1; min-width: 180px; }
+    .creator-filters select { min-width: 150px; }
+
+    .creator-player-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; }
+    .creator-player-stage { width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: #060c1c; border: 1px solid rgba(95, 165, 255, 0.2); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .creator-player-stage iframe, .creator-player-stage video { width: 100%; height: 100%; border: 0; }
+    .creator-playlist { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; }
+    .creator-playlist-item { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 8px; border-radius: 12px; border: 1px solid rgba(95, 165, 255, 0.18); background: rgba(10, 18, 36, 0.85); cursor: pointer; }
+    .creator-playlist-item.active { border-color: rgba(95, 208, 255, 0.8); background: rgba(16, 26, 52, 0.95); }
+    .creator-playlist-item h4 { margin: 0; font-size: 13px; }
+    .creator-playlist-item p { margin: 4px 0 0; font-size: 11px; color: rgba(180, 200, 240, 0.8); }
+
+    .analytics-bar { height: 6px; border-radius: 999px; background: rgba(95, 165, 255, 0.2); overflow: hidden; }
+    .analytics-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #5fd0ff, #4a6bff); }
+
+    .ai-output { display: flex; flex-direction: column; gap: 10px; }
+    .ai-output .row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .ai-chip { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px; background: rgba(95, 165, 255, 0.2); border: 1px solid rgba(95, 165, 255, 0.4); font-size: 11px; }
+
+    .creator-drawer { position: fixed; inset: 0; background: rgba(3, 8, 20, 0.72); display: none; justify-content: flex-end; z-index: 999; }
+    .creator-drawer.show { display: flex; }
+    .creator-drawer-panel { width: min(520px, 92vw); height: 100%; background: rgba(8, 14, 30, 0.98); border-left: 1px solid rgba(95, 165, 255, 0.25); padding: 18px; overflow-y: auto; }
+
+    @media (max-width: 1100px) {
+      .creator-layout { grid-template-columns: 1fr; }
+      .creator-nav { position: relative; top: 0; flex-direction: row; flex-wrap: wrap; }
+      .creator-player-layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 900px) {
+      .creator-hero { flex-direction: column; }
+      .creator-row { grid-template-columns: 72px 1fr; }
+      .creator-row.header { display: none; }
+      .creator-cell.status,
+      .creator-cell.visibility,
+      .creator-cell.views,
+      .creator-cell.likes,
+      .creator-cell.actions { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 <body class="admin-body">
@@ -37,210 +107,226 @@
   </header>
 
   <main class="creator-shell">
-    <h2>Creator Studio</h2>
-    <p class="muted">Apna channel banaiye, video submit kijiye. Admin approve karega tabhi aapke channel par dikhega.</p>
-
-    <div class="creator-grid">
-      <section class="creator-card" id="channelCard">
-        <h3>Channel Setup</h3>
-        <div id="channelDetails" class="muted">Loading channel...</div>
-        <div class="creator-row" id="channelForm">
-          <input id="channelName" placeholder="Channel name">
-          <textarea id="channelDesc" placeholder="Channel description (optional)"></textarea>
-          <div class="creator-actions">
-            <button id="saveChannelBtn" class="admin-btn">Save Channel</button>
-            <a id="publicChannelLink" class="admin-btn ghost" href="#" target="_blank" rel="noreferrer" style="display:none;">Open Public Channel</a>
+    <section class="creator-hero">
+      <div class="creator-hero-content">
+        <div class="creator-eyebrow">Creator Studio</div>
+        <h2 id="creatorTitle">NovaPlay Studio</h2>
+        <p id="creatorSubtitle" class="creator-subtitle">Apna channel banaiye, video submit kijiye. Admin approve karega tabhi aapke channel par dikhega.</p>
+        <div class="creator-quick">
+          <div class="creator-stat">
+            <span class="label">Total Videos</span>
+            <span class="value" id="statTotal">0</span>
           </div>
-          <div id="channelStatus" class="creator-status"></div>
-        </div>
-      </section>
-
-      <section class="creator-card" id="uploadCard">
-        <h3>Upload / Submit Video</h3>
-        <div class="creator-row">
-          <input id="videoTitle" placeholder="Video title">
-          <input id="videoUrl" placeholder="Video URL (YouTube/Vimeo/Dailymotion/MP4 link)">
-          <input id="videoThumb" placeholder="Thumbnail URL (optional)">
-          <input id="videoCategory" placeholder="Category (example: music, movies)">
-          <input id="videoLanguage" placeholder="Language (example: hi, en)">
-          <div class="creator-actions">
-            <button id="submitVideoBtn" class="admin-btn">Submit For Approval</button>
+          <div class="creator-stat">
+            <span class="label">Published</span>
+            <span class="value" id="statPublished">0</span>
           </div>
-          <div id="uploadStatus" class="creator-status"></div>
+          <div class="creator-stat">
+            <span class="label">Pending</span>
+            <span class="value" id="statPending">0</span>
+          </div>
+          <div class="creator-stat">
+            <span class="label">Total Views</span>
+            <span class="value" id="statViews">0</span>
+          </div>
+          <div class="creator-stat">
+            <span class="label">Total Likes</span>
+            <span class="value" id="statLikes">0</span>
+          </div>
         </div>
-      </section>
-    </div>
-
-    <section class="creator-videos">
-      <h3>My Videos</h3>
-      <div id="myVideos" class="video-grid"></div>
+      </div>
+      <div class="creator-hero-actions">
+        <button id="newUploadBtn" class="admin-btn">New Upload</button>
+        <a id="publicChannelLink" class="admin-btn ghost" href="#" target="_blank" rel="noreferrer" style="display:none;">Open Public Channel</a>
+      </div>
     </section>
+
+    <div class="creator-layout">
+      <aside class="creator-nav">
+        <button class="active" data-section="dashboard">Dashboard</button>
+        <button data-section="content">Content</button>
+        <button data-section="analytics">Analytics</button>
+        <button data-section="player">Player</button>
+        <button data-section="ai">AI Studio</button>
+        <button data-section="channel">Channel</button>
+      </aside>
+
+      <div class="creator-main">
+        <section id="section-dashboard" class="creator-section active">
+          <div class="creator-grid">
+            <div class="creator-card">
+              <h3>Channel Snapshot</h3>
+              <div id="channelDetails" class="muted">Loading channel...</div>
+              <div style="margin-top:12px" class="creator-actions">
+                <button class="admin-btn" data-section="channel" id="editChannelBtn">Edit Channel</button>
+              </div>
+              <div id="channelStatus" class="creator-status"></div>
+            </div>
+            <div class="creator-card">
+              <h3>Recent Uploads</h3>
+              <div id="recentUploads" class="muted">Loading...</div>
+            </div>
+            <div class="creator-card">
+              <h3>Quick Actions</h3>
+              <div class="creator-actions">
+                <button class="admin-btn" data-section="content" id="openContentBtn">Manage Videos</button>
+                <button class="admin-btn ghost" data-section="player" id="openPlayerBtn">Open Player</button>
+                <button class="admin-btn ghost" data-section="ai" id="openAiBtn">AI Assist</button>
+              </div>
+              <p class="muted" style="margin-top:12px">Publish status dikhega: approved = Published, pending = Unpublished.</p>
+            </div>
+          </div>
+        </section>
+        <section id="section-content" class="creator-section">
+          <div class="creator-grid">
+            <div class="creator-card">
+              <h3>Upload / Submit Video</h3>
+              <div class="creator-row" style="grid-template-columns: 1fr;">
+                <input id="videoTitle" placeholder="Video title">
+                <textarea id="videoDescription" placeholder="Description"></textarea>
+                <input id="videoUrl" placeholder="Video URL (YouTube/Vimeo/Dailymotion/MP4 link)">
+                <input id="videoThumb" placeholder="Thumbnail URL (optional)">
+                <input id="videoCategory" placeholder="Category (example: music, movies)">
+                <input id="videoLanguage" placeholder="Language (example: hi, en)">
+                <input id="videoTags" placeholder="Tags (comma separated)">
+                <input id="videoHashtags" placeholder="Hashtags (#tag #tag2)">
+                <div class="creator-actions">
+                  <button id="aiSuggestUploadBtn" class="admin-btn ghost">AI Suggest</button>
+                  <button id="submitVideoBtn" class="admin-btn">Submit For Approval</button>
+                </div>
+                <div id="uploadStatus" class="creator-status"></div>
+              </div>
+            </div>
+
+            <div class="creator-card">
+              <h3>AI Suggestions</h3>
+              <div id="aiSummary" class="ai-output">
+                <div class="muted">AI suggestions will appear here.</div>
+              </div>
+              <div class="creator-actions" style="margin-top:12px;">
+                <button id="aiApplyUploadBtn" class="admin-btn ghost">Apply To Upload</button>
+                <button id="aiApplySelectedBtn" class="admin-btn">Apply To Selected Video</button>
+              </div>
+              <div id="aiInlineStatus" class="creator-status"></div>
+            </div>
+          </div>
+
+          <div class="creator-card" style="margin-top:16px;">
+            <h3>My Videos</h3>
+            <div class="creator-filters">
+              <input id="videoSearch" placeholder="Search title, category, language">
+              <select id="statusFilter">
+                <option value="all">All Status</option>
+                <option value="approved">Published</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <select id="categoryFilter">
+                <option value="all">All Categories</option>
+              </select>
+              <select id="sortFilter">
+                <option value="latest">Latest</option>
+                <option value="views">Most Views</option>
+                <option value="likes">Most Likes</option>
+              </select>
+            </div>
+            <div id="myVideos" class="creator-table"></div>
+          </div>
+        </section>
+
+        <section id="section-analytics" class="creator-section">
+          <div class="creator-grid" id="analyticsCards"></div>
+          <div class="creator-card" style="margin-top:16px;">
+            <h3>Top Videos</h3>
+            <div id="topVideos" class="ai-output"></div>
+          </div>
+        </section>
+
+        <section id="section-player" class="creator-section">
+          <div class="creator-player-layout">
+            <div class="creator-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+                <div>
+                  <div class="muted">Now Playing</div>
+                  <h3 id="playerTitle">Select a video</h3>
+                  <div id="playerMeta" class="muted"></div>
+                </div>
+                <button id="openFullPlayerBtn" class="admin-btn ghost">Open Full Player</button>
+              </div>
+              <div id="creatorPlayerStage" class="creator-player-stage">
+                <div class="muted">Choose a video from the list.</div>
+              </div>
+            </div>
+            <div class="creator-card">
+              <h3>Your Videos</h3>
+              <div id="playerPlaylist" class="creator-playlist"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="section-ai" class="creator-section">
+          <div class="creator-grid">
+            <div class="creator-card">
+              <h3>AI Video Analyzer</h3>
+              <div class="creator-row" style="grid-template-columns: 1fr;">
+                <input id="aiTitle" placeholder="Title (optional)">
+                <textarea id="aiDescription" placeholder="Description (optional)"></textarea>
+                <input id="aiUrl" placeholder="Video URL for analysis">
+                <div class="creator-actions">
+                  <button id="aiAnalyzeBtn" class="admin-btn">Analyze</button>
+                  <button id="aiAnalyzeSelectedBtn" class="admin-btn ghost">Analyze Selected Video</button>
+                </div>
+                <div id="aiStatus" class="creator-status"></div>
+              </div>
+            </div>
+            <div class="creator-card">
+              <h3>AI Output</h3>
+              <div id="aiOutput" class="ai-output"></div>
+              <div class="creator-actions" style="margin-top:12px;">
+                <button id="aiApplyUploadBtn2" class="admin-btn ghost">Apply To Upload</button>
+                <button id="aiApplySelectedBtn2" class="admin-btn">Apply To Selected Video</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="section-channel" class="creator-section">
+          <div class="creator-card">
+            <h3>Channel Setup</h3>
+            <div class="creator-row" style="grid-template-columns: 1fr;">
+              <input id="channelName" placeholder="Channel name">
+              <textarea id="channelDesc" placeholder="Channel description (optional)"></textarea>
+              <div class="creator-actions">
+                <button id="saveChannelBtn" class="admin-btn">Save Channel</button>
+              </div>
+              <div id="channelStatusInline" class="creator-status"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   </main>
+  <div class="creator-drawer" id="editDrawer">
+    <div class="creator-drawer-panel">
+      <h3>Edit Video</h3>
+      <div class="creator-row" style="grid-template-columns: 1fr;">
+        <input id="editTitle" placeholder="Title">
+        <textarea id="editDescription" placeholder="Description"></textarea>
+        <input id="editTags" placeholder="Tags (comma separated)">
+        <input id="editHashtags" placeholder="Hashtags (#tag #tag2)">
+        <input id="editCategory" placeholder="Category">
+        <input id="editLanguage" placeholder="Language">
+        <input id="editThumb" placeholder="Thumbnail URL">
+        <div class="creator-actions">
+          <button id="editAiBtn" class="admin-btn ghost">AI Suggest</button>
+          <button id="editSaveBtn" class="admin-btn">Save Changes</button>
+          <button id="editCloseBtn" class="admin-btn ghost">Close</button>
+        </div>
+        <div id="editStatus" class="creator-status"></div>
+      </div>
+    </div>
+  </div>
 
-  <script>
-    const channelDetails = document.getElementById("channelDetails")
-    const channelForm = document.getElementById("channelForm")
-    const channelName = document.getElementById("channelName")
-    const channelDesc = document.getElementById("channelDesc")
-    const saveChannelBtn = document.getElementById("saveChannelBtn")
-    const channelStatus = document.getElementById("channelStatus")
-    const publicChannelLink = document.getElementById("publicChannelLink")
-
-    const submitVideoBtn = document.getElementById("submitVideoBtn")
-    const videoTitle = document.getElementById("videoTitle")
-    const videoUrl = document.getElementById("videoUrl")
-    const videoThumb = document.getElementById("videoThumb")
-    const videoCategory = document.getElementById("videoCategory")
-    const videoLanguage = document.getElementById("videoLanguage")
-    const uploadStatus = document.getElementById("uploadStatus")
-    const myVideos = document.getElementById("myVideos")
-
-    let currentChannel = null
-
-    function setStatus(el, msg, isError) {
-      el.textContent = msg || ""
-      el.classList.toggle("error", Boolean(isError))
-    }
-
-    async function apiFetch(url, options = {}) {
-      const res = await fetch(url, options)
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(data.error || "Request failed")
-      }
-      return data
-    }
-
-    async function loadChannel() {
-      try {
-        const data = await apiFetch("/api/creator/channel")
-        currentChannel = data.channel
-        if (currentChannel) {
-          channelDetails.innerHTML = `<strong>${currentChannel.name}</strong><br>${currentChannel.description || ""}`
-          channelName.value = currentChannel.name || ""
-          channelDesc.value = currentChannel.description || ""
-          publicChannelLink.href = `/channel.html?id=${encodeURIComponent(currentChannel.channelId)}`
-          publicChannelLink.style.display = "inline-flex"
-          setStatus(channelStatus, "Channel ready", false)
-        } else {
-          channelDetails.textContent = "No channel yet. Create your channel below."
-          publicChannelLink.style.display = "none"
-        }
-      } catch (err) {
-        channelDetails.textContent = "Unable to load channel"
-        setStatus(channelStatus, err.message, true)
-      }
-    }
-
-    async function saveChannel() {
-      try {
-        setStatus(channelStatus, "Saving...", false)
-        const payload = {
-          name: channelName.value,
-          description: channelDesc.value
-        }
-        const data = await apiFetch("/api/creator/channel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-        currentChannel = data.channel
-        await loadChannel()
-        setStatus(channelStatus, "Channel saved", false)
-      } catch (err) {
-        setStatus(channelStatus, err.message, true)
-      }
-    }
-
-    function renderStatus(status) {
-      const span = document.createElement("span")
-      span.className = "status-pill"
-      if (status === "approved") span.classList.add("status-approved")
-      if (status === "pending") span.classList.add("status-pending")
-      if (status === "rejected") span.classList.add("status-rejected")
-      span.textContent = status
-      return span
-    }
-
-    function buildVideoCard(video) {
-      const card = document.createElement("div")
-      card.className = "video-card"
-
-      const thumb = document.createElement("div")
-      thumb.className = "video-thumb"
-      if (video.thumbnailUrl) {
-        thumb.style.backgroundImage = `url('${video.thumbnailUrl}')`
-      }
-
-      const body = document.createElement("div")
-      body.className = "video-body"
-
-      const title = document.createElement("h4")
-      title.textContent = video.title || "Untitled"
-
-      const meta = document.createElement("div")
-      meta.className = "video-meta"
-      meta.textContent = [video.category, video.language].filter(Boolean).join(" · ")
-
-      const statusWrap = document.createElement("div")
-      statusWrap.appendChild(renderStatus(video.status || "pending"))
-
-      body.appendChild(title)
-      body.appendChild(meta)
-      body.appendChild(statusWrap)
-
-      card.appendChild(thumb)
-      card.appendChild(body)
-      return card
-    }
-
-    async function loadMyVideos() {
-      try {
-        const list = await apiFetch("/api/creator/videos")
-        myVideos.innerHTML = ""
-        if (!Array.isArray(list) || list.length === 0) {
-          myVideos.innerHTML = "<div class='muted'>No videos yet.</div>"
-          return
-        }
-        list.forEach(video => myVideos.appendChild(buildVideoCard(video)))
-      } catch (err) {
-        myVideos.innerHTML = `<div class='muted'>${err.message}</div>`
-      }
-    }
-
-    async function submitVideo() {
-      try {
-        if (!currentChannel) {
-          setStatus(uploadStatus, "Create your channel first", true)
-          return
-        }
-        setStatus(uploadStatus, "Submitting...", false)
-        const payload = {
-          title: videoTitle.value,
-          url: videoUrl.value,
-          thumbnailUrl: videoThumb.value,
-          category: videoCategory.value,
-          language: videoLanguage.value
-        }
-        await apiFetch("/api/creator/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-        videoTitle.value = ""
-        videoUrl.value = ""
-        videoThumb.value = ""
-        setStatus(uploadStatus, "Submitted for approval", false)
-        await loadMyVideos()
-      } catch (err) {
-        setStatus(uploadStatus, err.message, true)
-      }
-    }
-
-    saveChannelBtn.addEventListener("click", saveChannel)
-    submitVideoBtn.addEventListener("click", submitVideo)
-
-    loadChannel().then(loadMyVideos)
-  </script>
+  <script src="/creator.js"></script>
 </body>
 </html>

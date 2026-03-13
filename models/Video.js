@@ -7,6 +7,9 @@ const videoSchema = new mongoose.Schema({
   likes: Number,
   category: String,
   language: String,
+  description: String,
+  tags: [String],
+  hashtags: [String],
   thumbnailUrl: String,
   source: String,
   approved: Boolean,
@@ -29,3 +32,4 @@ const videoSchema = new mongoose.Schema({
 })
 
 module.exports = mongoose.model("Video", videoSchema)
+
